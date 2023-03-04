@@ -1,5 +1,6 @@
-data/input.txt
-
+data/*
+!data/example.kanjiHints.json
+!data/example.txt
 
 ### Gradle ###
 .gradle

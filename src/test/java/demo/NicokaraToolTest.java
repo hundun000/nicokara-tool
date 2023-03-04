@@ -62,4 +62,14 @@ public class NicokaraToolTest {
         
         
     }
+    
+    @Test
+    public void test5() {
+        String text;
+        String result;
+        
+        text = "言い";
+        result = MyToken.toLyric(NicokaraTool.toMyTokenList(text, "USELESS"));
+        assertEquals("言(い)い\n", result);
+    }
 }

@@ -2,25 +2,36 @@ package demo;
 
 import demo.IMojiHelper.SimpleMojiHelper;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.moji4j.MojiConverter;
 import com.moji4j.MojiDetector;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author hundun
@@ -28,15 +39,24 @@ import lombok.Data;
  */
 public class NicokaraTool {
     
-
+    static ObjectMapper objectMapper;
     
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
-
+    static {
+        objectMapper = new ObjectMapper()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                ;
+    }
     
-    public static void main(String[] args) {
-        List<String> list = readAllLines("data/input.txt");
-        List<MyToken> myTokens = toMyTokenList(list);
-        String ruby = MyToken.collectRuby(myTokens);
+    public static void main(String[] args) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
+        System.out.println("Enter name: ");
+        String name = br.readLine();
+        File kanjiHintsFile = new File("data/" + name + ".kanjiHints.json");
+        List<String> list = readAllLines("data/" + name + ".txt");
+        List<MyToken> MyTokens = toMyTokenList(list);
+        String ruby = RubyCollector.collectRuby(MyTokens, kanjiHintsFile);
+        System.out.println("Ruby: ");
         System.out.println(ruby);
     }
 
@@ -52,52 +72,177 @@ public class NicokaraTool {
         
     }
     
+    @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Data
-    public static class MyTokenNode {
+    @Getter
+    @Setter
+    public static class KanjiInfo {
         String kanji;
-        String kanjiPronunciationKana;
-        String kana;
+        Map<String, List<String>> pronunciationMap;
+        
+        
+        public void merge(MySubToken node) {
+            if (!pronunciationMap.containsKey(node.kanjiPronunciation)) {
+                pronunciationMap.put(node.kanjiPronunciation, new ArrayList<>());
+            }
+            pronunciationMap.get(node.kanjiPronunciation).add(node.source);
+        }
+        
+        public void appendAsRuby(List<String> lines) {
+            if (pronunciationMap.size() == 1) {
+                lines.add(String.format("@Ruby%d=%s,%s", 
+                        lines.size() + 1,
+                        kanji,
+                        pronunciationMap.entrySet().iterator().next().getKey()
+                        ));
+            } else {
+                pronunciationMap.forEach((pronunciation, sources) -> {
+                    sources.forEach(source -> {
+                        lines.add(String.format("@Ruby%d=%s,%s,[00:00:00],[99:99:99] // from %s", 
+                                lines.size() + 1,
+                                kanji,
+                                pronunciation,
+                                source
+                                ));
+                    });
+                });
+            }
+        }
+        
+        public KanjiHint toKanjiHint() {
+            var hintMap = pronunciationMap.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            entry -> entry.getKey(),
+                            entry -> {
+                                var pronunciation = entry.getKey();
+                                var sources = entry.getValue();
+                                var hintNode = sources.stream()
+                                        .map(source -> String.format("%s,[00:00:00],[99:99:99] // from %s", 
+                                                pronunciation,
+                                                source
+                                                ))
+                                        .collect(Collectors.toList());
+                                return hintNode;
+                            })
+                    );
+            return KanjiHint.builder()
+                    .kanji(kanji)
+                    .hintMap(hintMap)
+                    .build();
+        }
     }
     
+    @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     @Data
-    public static class MyToken {
-        List<MyTokenNode> nodes;
-        boolean asNewLine;
+    public static class KanjiHint {
+        String kanji;
+        Map<String, List<String>> hintMap;
         
         
+        public void appendAsRuby(List<String> lines) {
+            hintMap.forEach((pronunciation, hints) -> {
+                hints.forEach(hint -> {
+                    lines.add(String.format("@Ruby%d=%s,%s", 
+                            lines.size() + 1,
+                            kanji,
+                            hint
+                            ));
+                });
+            });
+        }
+    }
+    
+    public static class RubyCollector {
         
-        public static String collectRuby(List<MyToken> myTokens) {
-            Map<String, String> kanjiPronunciationMap = new HashMap<>();
-            myTokens.stream()
+        public static void newKanjiHintsFile(File kanjiHintsFile, Map<String, KanjiInfo> kanjiInfoMap) {
+            
+            List<KanjiHint> list = kanjiInfoMap.values().stream()
+                    .filter(it -> it.getPronunciationMap().size() > 1)
+                    .map(it -> it.toKanjiHint())
+                    .collect(Collectors.toList());
+            try {
+                objectMapper.writeValue(kanjiHintsFile, list);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        @SuppressWarnings("unchecked")
+        public static List<KanjiHint> readKanjiHintsFile(File kanjiHintsFile) {
+            try {
+                return (List<KanjiHint>)objectMapper.readValue(kanjiHintsFile, objectMapper.getTypeFactory().constructCollectionType(List.class, KanjiHint.class));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        
+        public static String collectRuby(List<MyToken> MyTokens, File kanjiHintsFile) {
+            Map<String, KanjiInfo> kanjiInfoMap = new HashMap<>();
+            MyTokens.stream()
                     .filter(it -> it.nodes != null)
                     .forEach(it -> {
                         it.nodes.stream()
                                 .forEach(node -> {
                                     if (node.kanji != null) {
-                                        kanjiPronunciationMap.put(node.kanji, node.kanjiPronunciationKana);
+                                        if (!kanjiInfoMap.containsKey(node.kanji)) {
+                                            kanjiInfoMap.put(node.kanji, KanjiInfo.builder()
+                                                    .kanji(node.kanji)
+                                                    .pronunciationMap(new HashMap<>())
+                                                    .build());
+                                        }
+                                        kanjiInfoMap.get(node.kanji).merge(node);
                                     }
                                 });
                     });
+            
+            if (!kanjiHintsFile.exists()) {
+                newKanjiHintsFile(kanjiHintsFile, kanjiInfoMap);
+            }
+            var kanjiHintsMap = readKanjiHintsFile(kanjiHintsFile).stream()
+                    .collect(Collectors.toMap(
+                            it -> it.getKanji(), 
+                            it -> it
+                            ));
+            
+            
             List<String> lines = new ArrayList<>();
-            kanjiPronunciationMap.forEach((k, v) -> {
-                lines.add(String.format("@Ruby%d=%s,%s", 
-                        lines.size(),
-                        k,
-                        v
-                        ));
+            kanjiInfoMap.forEach((kanji, kanjiInfo) -> {
+                if (kanjiHintsMap.containsKey(kanji)) {
+                    kanjiHintsMap.get(kanji).appendAsRuby(lines);
+                } else {
+                    kanjiInfo.appendAsRuby(lines);
+                }
             });
             
             return lines.stream()
                     .collect(Collectors.joining("\n"))
                     ;
         }
+    }
+    
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class MySubToken {
+        String kanji;
+        String kanjiPronunciation;
+        String kana;
+        String source;
+    }
+     
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class MyToken {
+        List<MySubToken> nodes;
+        boolean asNewLine;
         
-        public static String toLyric(List<MyToken> myTokens) {
-            return myTokens.stream()
+        public static String toLyric(List<MyToken> MyTokens) {
+            return MyTokens.stream()
                     .map(it -> {
                         if (it.asNewLine) {
                             return "\n";
@@ -107,7 +252,7 @@ public class NicokaraTool {
                                         if (node.kanji != null) {
                                             return String.format("%s(%s)", 
                                                     node.kanji,
-                                                    node.kanjiPronunciationKana
+                                                    node.kanjiPronunciation
                                                     );
                                         } else {
                                             return node.kana;
@@ -138,34 +283,38 @@ public class NicokaraTool {
         String pronunciation = mojiHelper.katakanaToHiragana(rawPronunciation);
 
         {
-            MyTokenNode currentNode = null;
+            MySubToken currentNode = null;
             for (int i = 0; i < surface.length(); i++) {
                 String c = String.valueOf(surface.charAt(i));
                 if (mojiHelper.hasKanji(c)) {
                     if (currentNode == null) {
-                        currentNode = MyTokenNode.builder()
+                        currentNode = MySubToken.builder()
                                 .kanji(c)
+                                .source(token.getSurface())
                                 .build();
                     } else if (currentNode.kanji != null) {
                         currentNode.kanji += c;
                     } else {
                         result.nodes.add(currentNode);
-                        currentNode = MyTokenNode.builder()
+                        currentNode = MySubToken.builder()
                                 .kanji(c)
+                                .source(token.getSurface())
                                 .build();
                     }
                 } else {
                     String hiragana = mojiHelper.katakanaToHiragana(c);
                     if (currentNode == null) {
-                        currentNode = MyTokenNode.builder()
+                        currentNode = MySubToken.builder()
                                 .kana(hiragana)
+                                .source(token.getSurface())
                                 .build();
                     } else if (currentNode.kana != null) {
                         currentNode.kana += hiragana;
                     } else {
                         result.nodes.add(currentNode);
-                        currentNode = MyTokenNode.builder()
+                        currentNode = MySubToken.builder()
                                 .kana(hiragana)
+                                .source(token.getSurface())
                                 .build();
                     }
                 }
@@ -173,28 +322,28 @@ public class NicokaraTool {
             result.nodes.add(currentNode);
         }
         
-        MyTokenNode handlingKanjiNode = null;
-        for (int i = 0; i < result.nodes.size(); i++) {
-            MyTokenNode node = result.nodes.get(i);
+        MySubToken handlingKanjiNode = null;
+        for (int i = result.nodes.size() - 1; i >= 0; i--) {
+            MySubToken node = result.nodes.get(i);
             if (node.kana != null) {
-                int kanaIndex = pronunciation.indexOf(node.kana);
+                int kanaIndex = pronunciation.lastIndexOf(node.kana);
                 if (handlingKanjiNode != null) {
                     if (kanaIndex < 0) {
                         throw new RuntimeException(node.kana + " not in " + pronunciation + ", result.nodes = " + result.nodes + ", rawPronunciation = " + rawPronunciation);
                     }
-                    handlingKanjiNode.kanjiPronunciationKana = pronunciation.substring(
-                            0,
-                            kanaIndex
+                    handlingKanjiNode.kanjiPronunciation = pronunciation.substring(
+                            kanaIndex + node.kana.length(),
+                            pronunciation.length()
                             );
                     handlingKanjiNode = null;
                 }
-                pronunciation = pronunciation.substring(kanaIndex + node.kana.length());
+                pronunciation = pronunciation.substring(0, kanaIndex);
             } else {
                 handlingKanjiNode = node;
             }
         }
         if (handlingKanjiNode != null) {
-            handlingKanjiNode.kanjiPronunciationKana = pronunciation.substring(
+            handlingKanjiNode.kanjiPronunciation = pronunciation.substring(
                     0,
                     pronunciation.length()
                     );
@@ -221,7 +370,7 @@ public class NicokaraTool {
                 } else {
                     result.add(MyToken.builder()
                             .nodes(List.of(
-                                    MyTokenNode.builder()
+                                    MySubToken.builder()
                                             .kana(token.getSurface())
                                             .build()
                                     ))
