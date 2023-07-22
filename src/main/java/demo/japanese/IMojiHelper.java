@@ -1,4 +1,4 @@
-package demo;
+package demo.japanese;
 
 import java.util.stream.Collectors;
 

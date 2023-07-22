@@ -1,4 +1,4 @@
-package demo;
+package demo.japanese;
 /**
  * JapaneseCharacter contains static functions to do various tests
  * on characters to determine if it is one of the various types of
