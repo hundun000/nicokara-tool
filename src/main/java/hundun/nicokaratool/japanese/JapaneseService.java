@@ -1,19 +1,22 @@
-package demo.japanese;
+package hundun.nicokaratool.japanese;
 
-import demo.japanese.IMojiHelper.SimpleMojiHelper;
+import hundun.nicokaratool.base.BaseService;
+import hundun.nicokaratool.base.KanjiPronunciationPackage;
+import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
+import hundun.nicokaratool.base.KanjiHintPO;
+import hundun.nicokaratool.base.RootHint;
+import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
-import demo.util.Utils;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,25 +25,10 @@ import lombok.Data;
  * @author hundun
  * Created on 2023/03/08
  */
-public class NicokaraRunner {
+public class JapaneseService extends BaseService<JapaneseLine> {
     
 
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
-
-
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); 
-        System.out.println("Enter name: ");
-        String name = br.readLine();
-        File kanjiHintsFile = new File("data/" + name + ".kanjiHints.json");
-        List<String> list = Utils.readAllLines("data/" + name + ".txt");
-        List<JapaneseToken> MyTokens = toMyTokenList(list);
-        var rubyCollector = new JapaneseRubyCollector();
-        String ruby = rubyCollector.collectRuby(MyTokens, kanjiHintsFile);
-        System.out.println("Ruby: ");
-        System.out.println(ruby);
-    }
-
 
     @AllArgsConstructor
     @Builder
@@ -55,12 +43,12 @@ public class NicokaraRunner {
     @AllArgsConstructor
     @Builder
     @Data
-    public static class JapaneseToken {
+    public static class JapaneseLine {
         List<JapaneseSubToken> nodes;
         boolean asNewLine;
         
-        public static String toLyric(List<JapaneseToken> MyTokens) {
-            return MyTokens.stream()
+        public static String toLyric(List<JapaneseLine> lines) {
+            return lines.stream()
                     .map(it -> {
                         if (it.asNewLine) {
                             return "\n";
@@ -92,8 +80,8 @@ public class NicokaraRunner {
 //        return hiragana;
 //    }
     
-    private static JapaneseToken toMyToken(Token token) {
-        JapaneseToken result = JapaneseToken.builder()
+    private static JapaneseLine _toMyToken(Token token) {
+        JapaneseLine result = JapaneseLine.builder()
                 .nodes(new ArrayList<>())
                 .build();
         String surface = token.getSurface();
@@ -170,13 +158,18 @@ public class NicokaraRunner {
         return result;
     }
     
-    public static List<JapaneseToken> toMyTokenList(String text, String splict) {
+    public static List<JapaneseLine> toMyTokenList(String text, String splict) {
         String[] lines = text.split(splict);
-        return toMyTokenList(List.of(lines));
+        return toMyTokenListCore(List.of(lines));
     }
-    
-    public static List<JapaneseToken> toMyTokenList(List<String> list) {
-        List<JapaneseToken> result = new ArrayList<>();
+
+    @Override
+    protected List<JapaneseLine> toMyTokenList(List<String> list) {
+        return toMyTokenListCore(list);
+    }
+
+    private static List<JapaneseLine> toMyTokenListCore(List<String> list) {
+        List<JapaneseLine> result = new ArrayList<>();
         Tokenizer tokenizer = new Tokenizer() ;
         for (String line : list) {
             List<Token> tokens = tokenizer.tokenize(line);
@@ -184,9 +177,9 @@ public class NicokaraRunner {
                 //boolean hasKanji = !KuromojiTool.isAllKana(token.getSurface()) && !token.getReading().equals("*") && !token.getReading().equals(token.getSurface());
                 boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
                 if (hasKanji) {
-                    result.add(toMyToken(token));
+                    result.add(_toMyToken(token));
                 } else {
-                    result.add(JapaneseToken.builder()
+                    result.add(JapaneseLine.builder()
                             .nodes(List.of(
                                     JapaneseSubToken.builder()
                                             .kana(token.getSurface())
@@ -195,10 +188,45 @@ public class NicokaraRunner {
                             .build());
                 }
             }
-            result.add(JapaneseToken.builder()
+            result.add(JapaneseLine.builder()
                     .asNewLine(true)
                     .build());
         }
         return result;
     }
+
+
+
+    @Override
+    protected Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<JapaneseLine> lines) {
+        Map<String, KanjiPronunciationPackage> map = new HashMap<>();
+        lines.forEach(line -> {
+            if (line.getNodes() != null) {
+                line.getNodes().stream()
+                        .forEach(node -> {
+                            if (node.kanji != null) {
+                                if (!map.containsKey(node.kanji)) {
+                                    map.put(node.kanji, KanjiPronunciationPackage.builder()
+                                            .kanji(node.kanji)
+                                            .pronunciationMap(new HashMap<>())
+                                            .build());
+                                }
+                                mergeNeedHintMap(map.get(node.kanji), node);
+                            }
+                        });
+            }
+        });
+        return map;
+    }
+
+    private void mergeNeedHintMap(KanjiPronunciationPackage thiz, JapaneseSubToken node) {
+        if (!thiz.getPronunciationMap().containsKey(node.getKanjiPronunciation())) {
+            thiz.getPronunciationMap().put(node.getKanjiPronunciation(), new ArrayList<>());
+        }
+        thiz.getPronunciationMap().get(node.getKanjiPronunciation()).add(
+                SourceInfo.fromUnknownTimestamp(node.getSource())
+        );
+    }
+
+
 }

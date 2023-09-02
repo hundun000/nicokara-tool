@@ -1,11 +1,10 @@
-package demo;
+package hundun.nicokaratool.japanese;
 
 import static org.junit.Assert.*;
 
-import demo.japanese.NicokaraRunner;
 import org.junit.Test;
 
-import demo.japanese.NicokaraRunner.JapaneseToken;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 
 /**
  * @author hundun
@@ -19,7 +18,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "すれ違って";
-        result = JapaneseToken.toLyric(NicokaraRunner.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("すれ違(ちが)って\n", result);
         
         
@@ -31,7 +30,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "抱きしめ";
-        result = JapaneseToken.toLyric(NicokaraRunner.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("抱(だ)きしめ\n", result);
 
         
@@ -44,7 +43,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "向こう";
-        result = JapaneseToken.toLyric(NicokaraRunner.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("向(む)こう\n", result);
         //assertEquals("向(む)こー\n", result);
         
@@ -57,7 +56,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "登った";
-        result = JapaneseToken.toLyric(NicokaraRunner.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("登(のぼ)った\n", result);
 
         
@@ -70,7 +69,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "言い";
-        result = JapaneseToken.toLyric(NicokaraRunner.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("言(い)い\n", result);
     }
 }

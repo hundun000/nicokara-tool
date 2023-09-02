@@ -1,4 +1,4 @@
-package demo.util;
+package hundun.nicokaratool.util;
 
 import org.apache.commons.math3.util.Pair;
 

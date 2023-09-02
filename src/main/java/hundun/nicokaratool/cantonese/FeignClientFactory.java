@@ -1,4 +1,4 @@
-package demo.cantonese;
+package hundun.nicokaratool.cantonese;
 
 
 import java.util.concurrent.TimeUnit;
@@ -25,7 +25,7 @@ public class FeignClientFactory {
 
     public static <T> T get(Class<T> clazz, String url) {
         return getBaseBuilder()
-                .options(new Request.Options(10, TimeUnit.SECONDS, 20, TimeUnit.SECONDS, true))
+                .options(new Request.Options(1, TimeUnit.SECONDS, 2, TimeUnit.SECONDS, true))
                 .target(clazz, url)
                 ;
     }

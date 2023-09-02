@@ -1,4 +1,4 @@
-package demo.japanese;
+package hundun.nicokaratool.japanese;
 
 import java.util.List;
 import java.util.regex.Matcher;

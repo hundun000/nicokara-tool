@@ -1,9 +1,8 @@
-package demo;
+package hundun.nicokaratool.japanese;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import demo.japanese.KuromojiTool;
 import org.junit.Test;
 
 
