@@ -12,7 +12,8 @@ public class PycantoneseFeignClientTest {
         YaleRequest request = YaleRequest.builder()
                 .text("你好世界")
                 .build();
-        YaleResponse response = client.jyutping_to_yale(request);
+        YaleResponse response = client.characters_to_jyutping(request);
         System.out.println(response);
     }
+
 }

@@ -6,7 +6,7 @@
 
 由[kuromoji](https://github.com/atilika/kuromoji)提供日语NLP。
 
-#### 2. 为繁体字注音耶鲁拼音
+#### 2. 为繁体字注音粤拼/耶鲁拼音
 
 由[pycantonese-server](https://github.com/hundun000/pycantonese-server)提供粤语NLP。
 

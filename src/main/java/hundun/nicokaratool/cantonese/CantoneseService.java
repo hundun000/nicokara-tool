@@ -9,10 +9,7 @@ import hundun.nicokaratool.base.LyricLine.LyricToken;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleResponse;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -27,7 +24,8 @@ import java.util.stream.Collectors;
 
 public class CantoneseService extends BaseService<LyricLine> {
     PycantoneseFeignClient client = PycantoneseFeignClient.instance();
-
+    @Setter
+    CantonesePronounceType type = CantonesePronounceType.JYUT_PING;
     ApiCache apiCache;
     File apiCacheFile;
     static final String API_CACHE_FOLDER = "cache/";
@@ -38,6 +36,11 @@ public class CantoneseService extends BaseService<LyricLine> {
     @Builder
     public static class ApiCache {
         Map<String, YaleResponse> map;
+    }
+
+    public enum CantonesePronounceType {
+        JYUT_PING,
+        YALE,
     }
 
     @Override
@@ -116,7 +119,11 @@ public class CantoneseService extends BaseService<LyricLine> {
         String cacheKey = normalObjectMapper.writeValueAsString(request);
         YaleResponse response;
         if (!apiCache.getMap().containsKey(cacheKey)) {
-            response = client.jyutping_to_yale(request);
+            if (type == CantonesePronounceType.YALE) {
+                response = client.characters_to_yale(request);
+            } else {
+                response = client.characters_to_jyutping(request);
+            }
             apiCache.getMap().put(cacheKey, response);
             fileObjectMapper.writeValue(apiCacheFile, apiCache);
         } else {
@@ -147,7 +154,7 @@ public class CantoneseService extends BaseService<LyricLine> {
                 request.setDisallow(rootHint.getNluDisallowHints());
             }
             YaleResponse response = cachedQuery(request);
-            var nodes = response.yale.stream()
+            var nodes = response.getResult().stream()
                     .map(it -> LyricToken.builder()
                             .kanji(it.get(0))
                             .yalePronunciation(it.get(1))

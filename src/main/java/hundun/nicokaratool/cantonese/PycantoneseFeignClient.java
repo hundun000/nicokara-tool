@@ -15,9 +15,13 @@ public interface PycantoneseFeignClient {
         return FeignClientFactory.get(PycantoneseFeignClient.class, "http://localhost:8002");
     }
 
-    @RequestLine("POST /jyutping_to_yale")
+    @RequestLine("POST /characters_to_yale")
     @Headers("Content-Type: application/json")
-    YaleResponse jyutping_to_yale(YaleRequest request);
+    YaleResponse characters_to_yale(YaleRequest request);
+
+    @RequestLine("POST /characters_to_jyutping")
+    @Headers("Content-Type: application/json")
+    YaleResponse characters_to_jyutping(YaleRequest request);
 
     @Data
     @AllArgsConstructor
@@ -33,6 +37,6 @@ public interface PycantoneseFeignClient {
     @NoArgsConstructor
     @Builder
     public static class YaleResponse {
-        List<List<String>> yale;
+        List<List<String>> result;
     }
 }
