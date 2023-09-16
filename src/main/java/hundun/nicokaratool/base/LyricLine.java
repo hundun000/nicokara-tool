@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -16,6 +17,23 @@ import java.util.List;
 @Builder
 public class LyricLine {
     List<LyricToken> nodes;
+
+    public String toNicokaraLine() {
+        return nodes.stream()
+                .map(it -> {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    if (it.getStart() != null) {
+                        stringBuilder.append(it.getStart().toStringTypeNicoKara());
+                    }
+                    stringBuilder.append(it.getKanji());
+                    if (it.getEnd() != null) {
+                        stringBuilder.append(it.getEnd().toStringTypeNicoKara());
+                    }
+                    return stringBuilder.toString();
+                })
+                .collect(Collectors.joining());
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -25,6 +43,12 @@ public class LyricLine {
         String kanji;
         String yalePronunciation;
         LyricTimestamp end;
+
+        public static LyricToken space() {
+            return LyricToken.builder()
+                    .kanji(" ")
+                    .build();
+        }
     }
 
     @Data

@@ -25,6 +25,7 @@ public interface PycantoneseFeignClient {
     @Builder
     public static class YaleRequest {
         String text;
+        List<String> disallow;
     }
 
     @Data

@@ -6,12 +6,14 @@ import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
 import hundun.nicokaratool.base.LyricLine;
 import hundun.nicokaratool.base.LyricLine.LyricTimestamp;
 import hundun.nicokaratool.base.LyricLine.LyricToken;
+import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,17 +41,17 @@ public class CantoneseService extends BaseService<LyricLine> {
     }
 
     @Override
-    protected List<LyricLine> toMyTokenList(List<String> list) {
+    protected List<LyricLine> toMyTokenList(List<String> list, @Nullable RootHint rootHint) {
         var result = list.stream()
                 .map(it -> {
                     try {
-                        return parseSimpleTimestampLine(it);
+                        return parseSimpleTimestampLine(it, rootHint);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 })
                 .collect(Collectors.toList());
-        for (int i= 0; i < result.size(); i++) {
+/*        for (int i= 0; i < result.size(); i++) {
             var it = result.get(i);
             var lastNode = it.getNodes().get(it.getNodes().size() - 1);
             if (lastNode.getEnd() == null && i + 1 < result.size()) {
@@ -57,8 +59,13 @@ public class CantoneseService extends BaseService<LyricLine> {
                 var nextLineFirstNode = nextLine.getNodes().get(0);
                 lastNode.setEnd(nextLineFirstNode.getStart());
             }
-        }
+        }*/
         return result;
+    }
+
+    @Override
+    protected String tokenToLine(LyricLine lyricLine) {
+        return lyricLine.toNicokaraLine();
     }
 
     @Override
@@ -68,7 +75,7 @@ public class CantoneseService extends BaseService<LyricLine> {
             if (line.getNodes() != null) {
                 line.getNodes().stream()
                         .forEach(node -> {
-                            if (node.getKanji() != null) {
+                            if (node.getKanji() != null && !node.getKanji().equals(" ")) {
                                 if (!map.containsKey(node.getKanji())) {
                                     map.put(node.getKanji(), KanjiPronunciationPackage.builder()
                                             .kanji(node.getKanji())
@@ -118,7 +125,7 @@ public class CantoneseService extends BaseService<LyricLine> {
         return response;
     }
 
-    public LyricLine parseSimpleTimestampLine(String text) throws IOException {
+    public LyricLine parseSimpleTimestampLine(String text, @Nullable RootHint rootHint) throws IOException {
         LyricTimestamp lineStart = null;
         LyricTimestamp lineEnd = null;
         if (text.startsWith("[")) {
@@ -129,20 +136,34 @@ public class CantoneseService extends BaseService<LyricLine> {
             lineEnd = (LyricTimestamp.parseType1(text.substring(text.length() - LyricTimestamp.TYPE_1_LENGTH)));
             text = text.substring(0, text.length() - LyricTimestamp.TYPE_1_LENGTH);
         }
-        YaleRequest request = YaleRequest.builder()
-                .text(text)
-                .build();
-        YaleResponse response = cachedQuery(request);
-        var nodes = response.yale.stream()
-                .map(it -> LyricToken.builder()
-                        .kanji(it.get(0))
-                        .yalePronunciation(it.get(1))
-                        .build())
-                .collect(Collectors.toList());
-        nodes.get(0).setStart(lineStart);
-        nodes.get(nodes.size() - 1).setEnd(lineEnd);
+        String[] parts = text.split(" ");
+        List<LyricToken> lyricTokens = new ArrayList<>();
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            YaleRequest request = YaleRequest.builder()
+                    .text(part)
+                    .build();
+            if (rootHint != null) {
+                request.setDisallow(rootHint.getNluDisallowHints());
+            }
+            YaleResponse response = cachedQuery(request);
+            var nodes = response.yale.stream()
+                    .map(it -> LyricToken.builder()
+                            .kanji(it.get(0))
+                            .yalePronunciation(it.get(1))
+                            .build())
+                    .collect(Collectors.toList());
+            lyricTokens.addAll(nodes);
+
+            if (i + 1 < parts.length) {
+                lyricTokens.add(LyricToken.space());
+            }
+        }
+
+        lyricTokens.get(0).setStart(lineStart);
+        lyricTokens.get(lyricTokens.size() - 1).setEnd(lineEnd);
         return LyricLine.builder()
-                .nodes(nodes)
+                .nodes(lyricTokens)
                 .build();
     }
 }

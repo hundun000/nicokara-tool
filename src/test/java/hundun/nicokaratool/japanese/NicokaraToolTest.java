@@ -18,7 +18,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "すれ違って";
-        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("すれ違(ちが)って\n", result);
         
         
@@ -30,7 +30,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "抱きしめ";
-        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("抱(だ)きしめ\n", result);
 
         
@@ -43,7 +43,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "向こう";
-        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("向(む)こう\n", result);
         //assertEquals("向(む)こー\n", result);
         
@@ -56,7 +56,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "登った";
-        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("登(のぼ)った\n", result);
 
         
@@ -69,7 +69,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "言い";
-        result = JapaneseLine.toLyric(JapaneseService.toMyTokenList(text, "USELESS"));
+        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
         assertEquals("言(い)い\n", result);
     }
 }

@@ -1,0 +1,19 @@
+{
+  "kanjiHints" : [ {
+    "kanji" : "重",
+    "pronounceHints" : [ {
+      "pronounce" : "かさ",
+      "rubyLines" : [ "かさ" ]
+    }, {
+      "pronounce" : "おも",
+      "rubyLines" : [ "おも,[02:14:37],[02:18:10]" ]
+    } ]
+  }, {
+    "kanji" : "登",
+    "pronounceHints" : [ {
+      "pronounce" : "き",
+      "rubyLines" : [ "き" ]
+    } ]
+  }],
+  "nluDisallowHints" : null
+}

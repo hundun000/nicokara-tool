@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,32 +25,39 @@ public abstract class BaseService<T_TOKEN> {
         fileObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    protected abstract List<T_TOKEN> toMyTokenList(List<String> list);
-
+    protected abstract List<T_TOKEN> toMyTokenList(List<String> list, @Nullable RootHint rootHint);
+    protected abstract String tokenToLine(T_TOKEN token);
     protected abstract Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<T_TOKEN> lines);
 
-        public ServiceResult work(String name) throws IOException {
+    public ServiceResult work(String name) throws IOException {
 
+        boolean needCreateRootHint = false;
 
         List<String> list = Utils.readAllLines("data/" + name + ".txt");
-        List<T_TOKEN> myTokens = toMyTokenList(list);
-        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(myTokens);
-
-
         RootHint rootHint;
         File rootHintFile = new File("data/" + name + ".rootHint.json");
         if (rootHintFile.exists()) {
             rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
         } else {
+            needCreateRootHint = true;
+            rootHint = null;
+        }
+
+        List<T_TOKEN> myTokens = toMyTokenList(list, rootHint);
+        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(myTokens);
+
+        if (needCreateRootHint) {
             List<KanjiHintPO> kanjiHintPOS = packageMap.values().stream()
                     .filter(it -> it.getPronunciationMap().size() > 1)
                     .map(it -> toKanjiHint(it))
                     .collect(Collectors.toList());
             rootHint = RootHint.builder()
                     .kanjiHints(kanjiHintPOS)
+                    .nluDisallowHints(new ArrayList<>(0))
                     .build();
             fileObjectMapper.writeValue(rootHintFile, rootHint);
         }
+
 
         Map<String, KanjiHintPO> kanjiHintsMap = rootHint.getKanjiHints().stream()
                 .collect(Collectors.toMap(
@@ -66,8 +74,12 @@ public abstract class BaseService<T_TOKEN> {
         });
         String ruby = String.join("\n", rubyList);
 
+
+        String kanji = myTokens.stream()
+                .map(it -> tokenToLine(it))
+                .collect(Collectors.joining("\n"));
         return ServiceResult.builder()
-                .list(list)
+                .kanji(kanji)
                 .ruby(ruby)
                 .build();
     }
@@ -143,7 +155,7 @@ public abstract class BaseService<T_TOKEN> {
     @NoArgsConstructor
     @Builder
     public static class ServiceResult {
-        List<String> list;
+        String kanji;
         String ruby;
     }
 

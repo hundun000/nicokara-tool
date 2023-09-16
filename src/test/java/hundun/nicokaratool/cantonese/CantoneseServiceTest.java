@@ -16,7 +16,9 @@ public class CantoneseServiceTest {
 
         ServiceResult serviceResult = service.work(name);
 
-        System.out.println("Ruby: ");
+        System.out.println("Result: ");
+        System.out.println(serviceResult.getKanji());
+        System.out.println("\n");
         System.out.println(serviceResult.getRuby());
     }
 }

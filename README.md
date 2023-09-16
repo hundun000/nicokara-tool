@@ -1,6 +1,18 @@
-### NicokaraTool.main()
+## NicokaraTool
 
-在`data/example.txt`放入歌词文本。
+由程序为歌词生成注音（含NLP判断多音字的读音），并以NicokaraMaker的格式（@Ruby）输出。
+
+#### 1. 为日语汉字注音假名
+
+由[kuromoji](https://github.com/atilika/kuromoji)提供日语NLP。
+
+#### 2. 为繁体字注音耶鲁拼音
+
+由[pycantonese-server](https://github.com/hundun000/pycantonese-server)提供粤语NLP。
+
+### 日语使用例
+
+在`data/example-japanese.txt`放入歌词文本。仅支持无时间戳的形式。
 
 ```
 大切な思い出を
@@ -16,17 +28,9 @@
 あと一歩が重くなるけど
 ```
 
-运行后输入"example"。
+假设不存在`data/example-japanese.rootHint.json`（以下简称rootHint.json），运行JapaneseServiceTest，程序输出为：
 
 ```
-Enter name: 
-example
-```
-
-程序将输出`@Ruby`格式的汉字注音（歌词中的特殊发音（登った == きた）不会自动处理，如有需要人工后期处理，例如将它加入kanjiHints.json）。用于 [NicoKaraMaker2](https://shinta.coresv.com/help/NicoKaraMaker2_JPN.html)。
-
-```
-Ruby: 
 @Ruby1=言,い
 @Ruby2=一,ひと
 @Ruby3=場所,ばしょ
@@ -39,36 +43,52 @@ Ruby:
 ...
 ```
 
-当出现一个汉字多种读法时，将生成`data/example.kanjiHints.json`:
+当出现一个汉字多种读法时，将生成rootHint.json:
 
 ```json
-[{
-  "kanji" : "重",
-  "hintMap" : {
-    "かさ" : [ "かさ,[00:00:00],[99:99:99] // TODO" ],
-    "おも" : [ "おも,[00:00:00],[99:99:99] // TODO" ]
-  }
-}]
+{
+  "kanjiHints" : [ {
+    "kanji" : "重",
+    "pronounceHints" : [ {
+      "pronounce" : "かさ",
+      "rubyLines" : [ "かさ,[00:00:00],[99:99:99] // from 重なる" ]
+    }, {
+      "pronounce" : "おも",
+      "rubyLines" : [ "おも,[00:00:00],[99:99:99] // from 重く" ]
+    } ]
+  } ],
+  "nluDisallowHints" : null
+}
 ```
 
-需要用户手工修改:
+需要用户手工修改rootHint.json：
+
+- 令"重"="かさ"作为默认注音，即不标注时间戳；令"重"="おも"在指定时间区间内生效；
+- 新增"登"="き"的特殊读法
 
 ```json
-[{
-  "kanji" : "重",
-  "hintMap" : {
-    "かさ" : [ "かさ" ],
-    "おも" : [ "おも,[02:14:37],[02:18:10]" ]
-  }
-}, {
-  "kanji" : "登",
-  "hintMap" : {
-    "き" : [ "き" ]
-  }
-}]
+{
+  "kanjiHints" : [ {
+    "kanji" : "重",
+    "pronounceHints" : [ {
+      "pronounce" : "かさ",
+      "rubyLines" : [ "かさ" ]
+    }, {
+      "pronounce" : "おも",
+      "rubyLines" : [ "おも,[02:14:37],[02:18:10]" ]
+    } ]
+  }, {
+    "kanji" : "登",
+    "pronounceHints" : [ {
+      "pronounce" : "き",
+      "rubyLines" : [ "き" ]
+    } ]
+  }],
+  "nluDisallowHints" : null
+}
 ```
 
-再次运行，此时输出变为：
+再次运行运行JapaneseServiceTest，此时输出变为：
 
 ```
 ...
@@ -77,4 +97,34 @@ Ruby:
 ...
 @Ruby17=登,き
 ...
+```
+
+### 粤语使用例
+
+在`data/example-cantonese.txt`放入歌词文本。支持行首行尾时间戳的形式。
+
+```
+[00:21.961]攔路雨偏似雪花 飲泣的你凍嗎
+[00:26.464]這風褸我給你磨到有襟花[00:28.464]
+```
+
+运行CantoneseServiceTest，程序输出为：
+
+```
+@Ruby1=你,néih
+@Ruby2=飲泣,yám yāp
+@Ruby3=風褸,fūng lāu
+...
+@Ruby19=襟,kām
+```
+
+rootHint.json的作用和日语情况类似。对于粤语，可设置nluDisallowHints传给pycantonese，详见pycantonese文档。
+
+此处nluDisallowHints使得“似雪花”在NLP中理解为“似/雪花”而非“似雪/花”
+
+```json
+{
+  "kanjiHints" : [ ],
+  "nluDisallowHints" : [ "似雪" ]
+}
 ```

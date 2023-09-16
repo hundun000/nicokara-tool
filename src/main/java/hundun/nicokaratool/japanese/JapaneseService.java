@@ -3,7 +3,6 @@ package hundun.nicokaratool.japanese;
 import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
-import hundun.nicokaratool.base.KanjiHintPO;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
@@ -20,6 +19,7 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author hundun
@@ -38,6 +38,28 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         String kanjiPronunciation;
         String kana;
         String source;
+
+        public String toLyricTypeSimple() {
+            if (this.kanji != null) {
+                return String.format("%s(%s)",
+                        this.kanji,
+                        this.kanjiPronunciation
+                );
+            } else {
+                return this.kana;
+            }
+        }
+
+        public String toLyricTypeNicokara() {
+            StringBuilder stringBuilder = new StringBuilder();
+            if (this.kanji != null) {
+                stringBuilder.append(this.kanji);
+            } else {
+                stringBuilder.append(this.kana);
+            }
+            return stringBuilder.toString();
+
+        }
     }
      
     @AllArgsConstructor
@@ -46,30 +68,31 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     public static class JapaneseLine {
         List<JapaneseSubToken> nodes;
         boolean asNewLine;
-        
-        public static String toLyric(List<JapaneseLine> lines) {
+
+        public static String toLyricTypeSimple(List<JapaneseLine> lines) {
             return lines.stream()
                     .map(it -> {
                         if (it.asNewLine) {
                             return "\n";
                         } else {
                             return it.nodes.stream()
-                                    .map(node -> {
-                                        if (node.kanji != null) {
-                                            return String.format("%s(%s)", 
-                                                    node.kanji,
-                                                    node.kanjiPronunciation
-                                                    );
-                                        } else {
-                                            return node.kana;
-                                        }
-                                    })
+                                    .map(node -> node.toLyricTypeSimple())
                                     .collect(Collectors.joining())
                                     ;
                         }
                     })
                     .collect(Collectors.joining())
                     ;
+        }
+
+        public String toLyricTypeNicokara() {
+            if (asNewLine) {
+                return "\n";
+            } else {
+                return nodes.stream()
+                        .map(it -> it.toLyricTypeNicokara())
+                        .collect(Collectors.joining());
+            }
         }
     }
     
@@ -164,8 +187,13 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
 
     @Override
-    protected List<JapaneseLine> toMyTokenList(List<String> list) {
+    protected List<JapaneseLine> toMyTokenList(List<String> list, @Nullable RootHint rootHint) {
         return toMyTokenListCore(list);
+    }
+
+    @Override
+    protected String tokenToLine(JapaneseLine japaneseLine) {
+        return japaneseLine.toLyricTypeNicokara();
     }
 
     private static List<JapaneseLine> toMyTokenListCore(List<String> list) {

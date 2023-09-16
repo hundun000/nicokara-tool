@@ -1,7 +1,6 @@
 data/*
 cache/*
-!data/example.kanjiHints.json
-!data/example.txt
+!data/example*
 
 ### Gradle ###
 .gradle
