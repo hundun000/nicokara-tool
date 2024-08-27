@@ -2,6 +2,7 @@ package hundun.nicokaratool.japanese;
 
 import static org.junit.Assert.*;
 
+import hundun.nicokaratool.japanese.JapaneseService.SimpleLyricsRender;
 import org.junit.Test;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
@@ -18,8 +19,8 @@ public class NicokaraToolTest {
         String result;
         
         text = "すれ違って";
-        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
-        assertEquals("すれ違(ちが)って\n", result);
+        result = SimpleLyricsRender.INSTANCE.toLyricsLine(JapaneseService.toParsedLinesCore(text));
+        assertEquals("すれ違(ちが)って", result);
         
         
     }
@@ -30,8 +31,8 @@ public class NicokaraToolTest {
         String result;
         
         text = "抱きしめ";
-        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
-        assertEquals("抱(だ)きしめ\n", result);
+        result = SimpleLyricsRender.INSTANCE.toLyricsLine(JapaneseService.toParsedLinesCore(text));
+        assertEquals("抱(だ)きしめ", result);
 
         
         
@@ -43,9 +44,9 @@ public class NicokaraToolTest {
         String result;
         
         text = "向こう";
-        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
-        assertEquals("向(む)こう\n", result);
-        //assertEquals("向(む)こー\n", result);
+        result = SimpleLyricsRender.INSTANCE.toLyricsLine(JapaneseService.toParsedLinesCore(text));
+        assertEquals("向(む)こう", result);
+        //assertEquals("向(む)こー", result);
         
         
     }
@@ -56,8 +57,8 @@ public class NicokaraToolTest {
         String result;
         
         text = "登った";
-        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
-        assertEquals("登(のぼ)った\n", result);
+        result = SimpleLyricsRender.INSTANCE.toLyricsLine(JapaneseService.toParsedLinesCore(text));
+        assertEquals("登(のぼ)った", result);
 
         
         
@@ -69,7 +70,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "言い";
-        result = JapaneseLine.toLyricTypeSimple(JapaneseService.toMyTokenList(text, "USELESS"));
-        assertEquals("言(い)い\n", result);
+        result = SimpleLyricsRender.INSTANCE.toLyricsLine(JapaneseService.toParsedLinesCore(text));
+        assertEquals("言(い)い", result);
     }
 }

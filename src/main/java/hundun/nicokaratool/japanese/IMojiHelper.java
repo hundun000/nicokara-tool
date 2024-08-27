@@ -42,7 +42,7 @@ public interface IMojiHelper {
         public String katakanaToHiragana(String katakana) {
             return katakana.chars()
                     .mapToObj(it -> (char)it)
-                    .map(it -> String.valueOf(JapaneseCharacter.toHiragana(it)))
+                    .map(it -> String.valueOf(JapaneseCharacterTool.toHiragana(it)))
                     .collect(Collectors.joining())
                     ;
         }
@@ -50,7 +50,7 @@ public interface IMojiHelper {
         @Override
         public boolean hasKanji(String text) {
             for (int i = 0; i < text.length(); i++) {
-                if (JapaneseCharacter.isKanji(text.charAt(i))) {
+                if (JapaneseCharacterTool.isKanji(text.charAt(i))) {
                     return true;
                 }
             }

@@ -1,4 +1,4 @@
-package hundun.nicokaratool.base;
+package hundun.nicokaratool.base.lyrics;
 
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
@@ -18,21 +18,6 @@ import java.util.stream.Collectors;
 public class LyricLine {
     List<LyricToken> nodes;
 
-    public String toNicokaraLine() {
-        return nodes.stream()
-                .map(it -> {
-                    StringBuilder stringBuilder = new StringBuilder();
-                    if (it.getStart() != null) {
-                        stringBuilder.append(it.getStart().toStringTypeNicoKara());
-                    }
-                    stringBuilder.append(it.getKanji());
-                    if (it.getEnd() != null) {
-                        stringBuilder.append(it.getEnd().toStringTypeNicoKara());
-                    }
-                    return stringBuilder.toString();
-                })
-                .collect(Collectors.joining());
-    }
 
     @Data
     @AllArgsConstructor

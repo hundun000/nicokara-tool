@@ -3,6 +3,8 @@ package hundun.nicokaratool.japanese;
 import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
+import hundun.nicokaratool.base.lyrics.ILyricsRender;
+import hundun.nicokaratool.base.lyrics.LyricLine;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
@@ -29,198 +31,187 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     
 
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
+    static final Tokenizer tokenizer = new Tokenizer();
 
+    protected JapaneseService() {
+        super(NicokaraLyricsRender.INSTANCE);
+    }
+
+    /**
+     * type 1: kanji + furigana;
+     * type 2: kana;
+     */
     @AllArgsConstructor
     @Builder
     @Data
     public static class JapaneseSubToken {
         String kanji;
-        String kanjiPronunciation;
+        String furigana;
         String kana;
         String source;
-
-        public String toLyricTypeSimple() {
-            if (this.kanji != null) {
-                return String.format("%s(%s)",
-                        this.kanji,
-                        this.kanjiPronunciation
-                );
-            } else {
-                return this.kana;
-            }
-        }
-
-        public String toLyricTypeNicokara() {
-            StringBuilder stringBuilder = new StringBuilder();
-            if (this.kanji != null) {
-                stringBuilder.append(this.kanji);
-            } else {
-                stringBuilder.append(this.kana);
-            }
-            return stringBuilder.toString();
-
-        }
     }
-     
     @AllArgsConstructor
     @Builder
     @Data
     public static class JapaneseLine {
-        List<JapaneseSubToken> nodes;
-        boolean asNewLine;
+        List<JapaneseParsedToken> parsedTokens;
 
-        public static String toLyricTypeSimple(List<JapaneseLine> lines) {
-            return lines.stream()
+    }
+
+    public static class SimpleLyricsRender implements ILyricsRender<JapaneseLine> {
+        public static SimpleLyricsRender INSTANCE = new SimpleLyricsRender();
+        @Override
+        public String toLyricsLine(JapaneseLine japaneseLine) {
+            return japaneseLine.parsedTokens.stream()
+                    .flatMap(it -> it.getSubTokens().stream())
                     .map(it -> {
-                        if (it.asNewLine) {
-                            return "\n";
+                        if (it.kanji != null) {
+                            return String.format("%s(%s)",
+                                    it.kanji,
+                                    it.furigana
+                            );
                         } else {
-                            return it.nodes.stream()
-                                    .map(node -> node.toLyricTypeSimple())
-                                    .collect(Collectors.joining())
-                                    ;
+                            return it.kana;
                         }
                     })
-                    .collect(Collectors.joining())
-                    ;
-        }
-
-        public String toLyricTypeNicokara() {
-            if (asNewLine) {
-                return "\n";
-            } else {
-                return nodes.stream()
-                        .map(it -> it.toLyricTypeNicokara())
-                        .collect(Collectors.joining());
-            }
+                    .collect(Collectors.joining());
         }
     }
+
+    public static class NicokaraLyricsRender implements ILyricsRender<JapaneseLine> {
+        public static NicokaraLyricsRender INSTANCE = new NicokaraLyricsRender();
+
+        @Override
+        public String toLyricsLine(JapaneseLine japaneseLine) {
+            return japaneseLine.parsedTokens.stream()
+                    .flatMap(parsedToken -> parsedToken.getSubTokens().stream())
+                    .map(subToken -> {
+                        StringBuilder stringBuilder = new StringBuilder();
+                        if (subToken.kanji != null) {
+                            stringBuilder.append(subToken.kanji);
+                        } else {
+                            stringBuilder.append(subToken.kana);
+                        }
+                        return stringBuilder.toString();
+                    })
+                    .collect(Collectors.joining()) + "\n";
+        }
+    }
+
+
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class JapaneseParsedToken {
+        List<JapaneseSubToken> subTokens;
+    }
     
-//    private static String katakanaToHiragana(String text) {
-//        //text = text.replace("ッ", "っ");
-//        String romaji = converter.convertKanaToRomaji(text);
-//        String hiragana = converter.convertRomajiToHiragana(romaji);
-//        return hiragana;
-//    }
-    
-    private static JapaneseLine _toMyToken(Token token) {
-        JapaneseLine result = JapaneseLine.builder()
-                .nodes(new ArrayList<>())
+    private static JapaneseParsedToken parseToken(Token token) {
+        JapaneseParsedToken result = JapaneseParsedToken.builder()
+                .subTokens(new ArrayList<>())
                 .build();
         String surface = token.getSurface();
         String rawPronunciation = token.getReading();
-        String pronunciation = mojiHelper.katakanaToHiragana(rawPronunciation);
+
 
         {
-            JapaneseSubToken currentNode = null;
+            JapaneseSubToken currentSubToken = null;
             for (int i = 0; i < surface.length(); i++) {
                 String c = String.valueOf(surface.charAt(i));
                 if (mojiHelper.hasKanji(c)) {
-                    if (currentNode == null) {
-                        currentNode = JapaneseSubToken.builder()
+                    if (currentSubToken == null) {
+                        currentSubToken = JapaneseSubToken.builder()
                                 .kanji(c)
                                 .source(token.getSurface())
                                 .build();
-                    } else if (currentNode.kanji != null) {
-                        currentNode.kanji += c;
+                    } else if (currentSubToken.kanji != null) {
+                        currentSubToken.kanji += c;
                     } else {
-                        result.nodes.add(currentNode);
-                        currentNode = JapaneseSubToken.builder()
+                        result.subTokens.add(currentSubToken);
+                        currentSubToken = JapaneseSubToken.builder()
                                 .kanji(c)
                                 .source(token.getSurface())
                                 .build();
                     }
                 } else {
                     String hiragana = mojiHelper.katakanaToHiragana(c);
-                    if (currentNode == null) {
-                        currentNode = JapaneseSubToken.builder()
+                    if (currentSubToken == null) {
+                        currentSubToken = JapaneseSubToken.builder()
                                 .kana(hiragana)
                                 .source(token.getSurface())
                                 .build();
-                    } else if (currentNode.kana != null) {
-                        currentNode.kana += hiragana;
+                    } else if (currentSubToken.kana != null) {
+                        currentSubToken.kana += hiragana;
                     } else {
-                        result.nodes.add(currentNode);
-                        currentNode = JapaneseSubToken.builder()
+                        result.subTokens.add(currentSubToken);
+                        currentSubToken = JapaneseSubToken.builder()
                                 .kana(hiragana)
                                 .source(token.getSurface())
                                 .build();
                     }
                 }
             }
-            result.nodes.add(currentNode);
+            result.subTokens.add(currentSubToken);
         }
-        
+
+        // 逐步截取分配到各个furigana上；
+        String unusedPronunciation = mojiHelper.katakanaToHiragana(rawPronunciation);
         JapaneseSubToken handlingKanjiNode = null;
-        for (int i = result.nodes.size() - 1; i >= 0; i--) {
-            JapaneseSubToken node = result.nodes.get(i);
+        for (int i = result.subTokens.size() - 1; i >= 0; i--) {
+            JapaneseSubToken node = result.subTokens.get(i);
             if (node.kana != null) {
-                int kanaIndex = pronunciation.lastIndexOf(node.kana);
+                int kanaIndex = unusedPronunciation.lastIndexOf(node.kana);
                 if (handlingKanjiNode != null) {
                     if (kanaIndex < 0) {
-                        throw new RuntimeException(node.kana + " not in " + pronunciation + ", result.nodes = " + result.nodes + ", rawPronunciation = " + rawPronunciation);
+                        throw new RuntimeException(node.kana + " not in " + unusedPronunciation + ", result.nodes = " + result.subTokens + ", rawPronunciation = " + rawPronunciation);
                     }
-                    handlingKanjiNode.kanjiPronunciation = pronunciation.substring(
-                            kanaIndex + node.kana.length(),
-                            pronunciation.length()
-                            );
+                    handlingKanjiNode.furigana = unusedPronunciation.substring(
+                            kanaIndex + node.kana.length()
+                    );
                     handlingKanjiNode = null;
                 }
-                pronunciation = pronunciation.substring(0, kanaIndex);
+                unusedPronunciation = unusedPronunciation.substring(0, kanaIndex);
             } else {
                 handlingKanjiNode = node;
             }
         }
         if (handlingKanjiNode != null) {
-            handlingKanjiNode.kanjiPronunciation = pronunciation.substring(
-                    0,
-                    pronunciation.length()
-                    );
+            handlingKanjiNode.furigana = unusedPronunciation;
         }
 
         return result;
     }
-    
-    public static List<JapaneseLine> toMyTokenList(String text, String splict) {
-        String[] lines = text.split(splict);
-        return toMyTokenListCore(List.of(lines));
-    }
+
 
     @Override
-    protected List<JapaneseLine> toMyTokenList(List<String> list, @Nullable RootHint rootHint) {
-        return toMyTokenListCore(list);
+    protected List<JapaneseLine> toParsedLines(List<String> lines, @Nullable RootHint rootHint) {
+        return lines.stream().map(it -> toParsedLinesCore(it)).collect(Collectors.toList());
     }
 
-    @Override
-    protected String tokenToLine(JapaneseLine japaneseLine) {
-        return japaneseLine.toLyricTypeNicokara();
-    }
 
-    private static List<JapaneseLine> toMyTokenListCore(List<String> list) {
-        List<JapaneseLine> result = new ArrayList<>();
-        Tokenizer tokenizer = new Tokenizer() ;
-        for (String line : list) {
-            List<Token> tokens = tokenizer.tokenize(line);
-            for (Token token : tokens) {
-                //boolean hasKanji = !KuromojiTool.isAllKana(token.getSurface()) && !token.getReading().equals("*") && !token.getReading().equals(token.getSurface());
-                boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
-                if (hasKanji) {
-                    result.add(_toMyToken(token));
-                } else {
-                    result.add(JapaneseLine.builder()
-                            .nodes(List.of(
-                                    JapaneseSubToken.builder()
-                                            .kana(token.getSurface())
-                                            .build()
-                                    ))
-                            .build());
-                }
-            }
-            result.add(JapaneseLine.builder()
-                    .asNewLine(true)
-                    .build());
-        }
-        return result;
+
+    public static JapaneseLine toParsedLinesCore(String line) {
+        List<Token> tokens = tokenizer.tokenize(line);
+        List<JapaneseParsedToken> parsedTokens = tokens.stream()
+                .map(token -> {
+                    boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
+                    if (hasKanji) {
+                        return parseToken(token);
+                    } else {
+                        return JapaneseParsedToken.builder()
+                                .subTokens(List.of(
+                                        JapaneseSubToken.builder()
+                                                .kana(token.getSurface())
+                                                .build()
+                                ))
+                                .build();
+                    }
+                })
+                .collect(Collectors.toList());
+        return JapaneseLine.builder()
+                .parsedTokens(parsedTokens)
+                .build();
+
     }
 
 
@@ -229,29 +220,29 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     protected Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<JapaneseLine> lines) {
         Map<String, KanjiPronunciationPackage> map = new HashMap<>();
         lines.forEach(line -> {
-            if (line.getNodes() != null) {
-                line.getNodes().stream()
-                        .forEach(node -> {
-                            if (node.kanji != null) {
-                                if (!map.containsKey(node.kanji)) {
-                                    map.put(node.kanji, KanjiPronunciationPackage.builder()
-                                            .kanji(node.kanji)
+            line.getParsedTokens().stream()
+                    .forEach(parsedToken -> {
+                        parsedToken.subTokens.forEach(subToken -> {
+                            if (subToken.kanji != null) {
+                                if (!map.containsKey(subToken.kanji)) {
+                                    map.put(subToken.kanji, KanjiPronunciationPackage.builder()
+                                            .kanji(subToken.kanji)
                                             .pronunciationMap(new HashMap<>())
                                             .build());
                                 }
-                                mergeNeedHintMap(map.get(node.kanji), node);
+                                mergeNeedHintMap(map.get(subToken.kanji), subToken);
                             }
                         });
-            }
+                    });
         });
         return map;
     }
 
     private void mergeNeedHintMap(KanjiPronunciationPackage thiz, JapaneseSubToken node) {
-        if (!thiz.getPronunciationMap().containsKey(node.getKanjiPronunciation())) {
-            thiz.getPronunciationMap().put(node.getKanjiPronunciation(), new ArrayList<>());
+        if (!thiz.getPronunciationMap().containsKey(node.getFurigana())) {
+            thiz.getPronunciationMap().put(node.getFurigana(), new ArrayList<>());
         }
-        thiz.getPronunciationMap().get(node.getKanjiPronunciation()).add(
+        thiz.getPronunciationMap().get(node.getFurigana()).add(
                 SourceInfo.fromUnknownTimestamp(node.getSource())
         );
     }

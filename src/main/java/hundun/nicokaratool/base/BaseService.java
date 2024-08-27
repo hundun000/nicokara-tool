@@ -3,6 +3,7 @@ package hundun.nicokaratool.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.KanjiHintPO.PronounceHint;
+import hundun.nicokaratool.base.lyrics.ILyricsRender;
 import hundun.nicokaratool.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,23 +18,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public abstract class BaseService<T_TOKEN> {
+public abstract class BaseService<T_PARSED_LINE> {
     protected ObjectMapper normalObjectMapper = new ObjectMapper();
     protected ObjectMapper fileObjectMapper = new ObjectMapper();
-
-    protected BaseService() {
+    ILyricsRender<T_PARSED_LINE> lyricsRender;
+    protected BaseService(ILyricsRender<T_PARSED_LINE> lyricsRender) {
+        this.lyricsRender = lyricsRender;
         fileObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    protected abstract List<T_TOKEN> toMyTokenList(List<String> list, @Nullable RootHint rootHint);
-    protected abstract String tokenToLine(T_TOKEN token);
-    protected abstract Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<T_TOKEN> lines);
+    protected abstract List<T_PARSED_LINE> toParsedLines(List<String> list, @Nullable RootHint rootHint);
+    protected abstract Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<T_PARSED_LINE> lines);
 
     public ServiceResult work(String name) throws IOException {
 
         boolean needCreateRootHint = false;
 
-        List<String> list = Utils.readAllLines("data/" + name + ".txt");
+        List<String> lines = Utils.readAllLines("data/" + name + ".txt");
         RootHint rootHint;
         File rootHintFile = new File("data/" + name + ".rootHint.json");
         if (rootHintFile.exists()) {
@@ -43,7 +44,7 @@ public abstract class BaseService<T_TOKEN> {
             rootHint = null;
         }
 
-        List<T_TOKEN> myTokens = toMyTokenList(list, rootHint);
+        List<T_PARSED_LINE> myTokens = toParsedLines(lines, rootHint);
         Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(myTokens);
 
         if (needCreateRootHint) {
@@ -76,7 +77,7 @@ public abstract class BaseService<T_TOKEN> {
 
 
         String kanji = myTokens.stream()
-                .map(it -> tokenToLine(it))
+                .map(it -> lyricsRender.toLyricsLine(it))
                 .collect(Collectors.joining("\n"));
         return ServiceResult.builder()
                 .kanji(kanji)

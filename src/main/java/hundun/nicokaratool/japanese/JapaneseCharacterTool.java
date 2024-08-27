@@ -13,7 +13,7 @@ package hundun.nicokaratool.japanese;
  *
  * @see <a href="http://sourceforge.net/projects/kanjixml/">http://sourceforge.net/projects/kanjixml/</a>
  */
-public class JapaneseCharacter {
+public class JapaneseCharacterTool {
 
     /**
      * Version information

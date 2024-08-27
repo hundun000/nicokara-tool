@@ -3,12 +3,13 @@ package hundun.nicokaratool.cantonese;
 import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
-import hundun.nicokaratool.base.LyricLine;
-import hundun.nicokaratool.base.LyricLine.LyricTimestamp;
-import hundun.nicokaratool.base.LyricLine.LyricToken;
+import hundun.nicokaratool.base.lyrics.LyricLine;
+import hundun.nicokaratool.base.lyrics.LyricLine.LyricTimestamp;
+import hundun.nicokaratool.base.lyrics.LyricLine.LyricToken;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleResponse;
+import hundun.nicokaratool.base.lyrics.StandardLyricsRender;
 import lombok.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +31,11 @@ public class CantoneseService extends BaseService<LyricLine> {
     File apiCacheFile;
     static final String API_CACHE_FOLDER = "cache/";
     static final String API_CACHE_FILE = API_CACHE_FOLDER + "cantoneseServiceApiCache.json";
+
+    protected CantoneseService() {
+        super(StandardLyricsRender.INSTANCE);
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -44,7 +50,7 @@ public class CantoneseService extends BaseService<LyricLine> {
     }
 
     @Override
-    protected List<LyricLine> toMyTokenList(List<String> list, @Nullable RootHint rootHint) {
+    protected List<LyricLine> toParsedLines(List<String> list, @Nullable RootHint rootHint) {
         var result = list.stream()
                 .map(it -> {
                     try {
@@ -64,11 +70,6 @@ public class CantoneseService extends BaseService<LyricLine> {
             }
         }*/
         return result;
-    }
-
-    @Override
-    protected String tokenToLine(LyricLine lyricLine) {
-        return lyricLine.toNicokaraLine();
     }
 
     @Override

@@ -1,7 +1,7 @@
 package hundun.nicokaratool.base;
 
-import hundun.nicokaratool.base.LyricLine.LyricTimestamp;
-import hundun.nicokaratool.base.LyricLine.LyricToken;
+import hundun.nicokaratool.base.lyrics.LyricLine.LyricTimestamp;
+import hundun.nicokaratool.base.lyrics.LyricLine.LyricToken;
 import lombok.*;
 
 import java.util.List;
