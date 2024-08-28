@@ -21,6 +21,7 @@ public class JapaneseServiceTest {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
     static JapaneseService service = new JapaneseService();
+    MainService mainService = new MainService();
 
     @Test
     public void test() throws IOException {
@@ -37,7 +38,7 @@ public class JapaneseServiceTest {
         String text = "お寿司が食べたい";
         JapaneseLine line = service.toParsedLines(List.of(text), null).get(0);
         line.setChinese("我想吃寿司。一段长长长长长长长长长长长长长长长长长长长长长长长长长长文本！");
-        Table table = Table.fromLine(line);
+        Table table = mainService.fromLineWithHint(line);
         System.out.println(objectMapper.writeValueAsString(table));
         table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_output.png");
     }

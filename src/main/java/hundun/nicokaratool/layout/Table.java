@@ -3,6 +3,7 @@ package hundun.nicokaratool.layout;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
+import hundun.nicokaratool.japanese.MainService.TableHint;
 import hundun.nicokaratool.layout.Cell.DrawContext;
 import io.github.humbleui.skija.*;
 import lombok.AllArgsConstructor;
@@ -20,81 +21,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
-@AllArgsConstructor
-@Builder
 public class Table {
 
-    static final int KANJI_FONT_SIZE = 20;
-    static final int KANA_FONT_SIZE = 10;
-
+    TableHint tableHint;
     Cell dummyRootCell;
     int depthBound;
     int rightBound;
 
-    Map<Integer, Integer> layerCellsMaxPreferredHeightMap;
+    Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 
-    public static Table fromLine(JapaneseLine line) {
-        Cell chineseRootCell = Cell.builder()
-                .rawText(line.getChinese())
-                .fontSize(KANJI_FONT_SIZE)
-                .belowCells(
-                        line.getParsedTokens().stream()
-                                .map(it -> cellFromToken(it))
-                                .collect(Collectors.toList())
-                )
-                .build();
-        Cell dummyRootCell = Cell.builder()
-                .rawText("")
-                .fontSize(0)
-                .belowCells(List.of(chineseRootCell))
-                .build();
-        Table table = Table.builder()
-                .dummyRootCell(dummyRootCell)
-                .layerCellsMaxPreferredHeightMap(new HashMap<>())
-                .build();
-        table.getDummyRootCell().update(table, null);
-        table.getDummyRootCell().update2(table, null);
-        table.getDummyRootCell().update3(table, null, 0);
-        return table;
-    }
-
-    public static Cell cellFromToken(JapaneseParsedToken parsedToken) {
-        List<Cell> belowCells = parsedToken.getSubTokens().stream()
-                .map(it -> cellFromSubToken(it))
-                .collect(Collectors.toList());
-        Cell upCell = Cell.builder()
-                .rawText(parsedToken.getDes())
-                .fontSize(20)
-                .build();
-        upCell.setBelowCells(belowCells);
-        return upCell;
-    }
-
-    public static Cell cellFromSubToken(JapaneseSubToken subToken) {
-        if (subToken.getKanji() != null) {
-            Cell upCell = Cell.builder()
-                    .rawText(subToken.getFurigana())
-                    .fontSize(KANA_FONT_SIZE)
-                    .build();
-            Cell downCell = Cell.builder()
-                    .rawText(subToken.getKanji())
-                    .fontSize(KANJI_FONT_SIZE)
-                    .build();
-            upCell.setBelowCells(List.of(downCell));
-            return upCell;
-        } else {
-            Cell upCell = Cell.builder()
-                    .rawText("")
-                    .fontSize(0)
-                    .build();
-            Cell downCell = Cell.builder()
-                    .rawText(subToken.getKana())
-                    .fontSize(KANJI_FONT_SIZE)
-                    .build();
-            upCell.setBelowCells(List.of(downCell));
-            return upCell;
-        }
-    }
 
     public void draw(String outputFilePathName) {
         Typeface face = Typeface.makeFromFile("data/Fonts/MiSans-Normal.ttf");

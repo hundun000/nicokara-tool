@@ -17,8 +17,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Cell {
-    public static final int xSpace = 0;
-    public static final int ySpace = 0;
+    public static final int xSpace = 5;
+    public static final int ySpace = 5;
     public static final int defaultSingleCellMaxWidth = 100;
 
     int layoutWidth;

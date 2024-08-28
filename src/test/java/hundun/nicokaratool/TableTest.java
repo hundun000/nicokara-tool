@@ -1,12 +1,12 @@
 package hundun.nicokaratool;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
+import hundun.nicokaratool.japanese.MainService;
 import hundun.nicokaratool.layout.Table;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class TableTest {
         JapaneseLine line = JapaneseLine.builder()
                 .parsedTokens(List.of(
                         JapaneseParsedToken.builder()
-                                .des("一段说明，长长长长长长长长长长长长长长长长长长长长文本")
+                                .partOfSpeechLevel1("一段说明，长长长长长长长长长长长长长长长长长长长长文本")
                                 .subTokens(List.of(
                                         JapaneseSubToken.builder()
                                                 .kana("a")
@@ -42,7 +42,7 @@ public class TableTest {
                                 .build()
                 ))
                 .build();
-        Table table = Table.fromLine(line);
+        Table table = MainService.fromLine(line);
         System.out.println(objectMapper.writeValueAsString(table));
         table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_output.png");
     }

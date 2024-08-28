@@ -2,6 +2,7 @@ package hundun.nicokaratool.cantonese;
 
 import feign.Headers;
 import feign.RequestLine;
+import hundun.nicokaratool.util.FeignClientFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

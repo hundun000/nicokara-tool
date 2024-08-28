@@ -1,5 +1,7 @@
 package hundun.nicokaratool.japanese;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
@@ -27,8 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * Created on 2023/03/08
  */
 public class JapaneseService extends BaseService<JapaneseLine> {
-    
 
+    public static ObjectMapper objectMapper = new ObjectMapper();
+    static {
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+    }
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
     static final Tokenizer tokenizer = new Tokenizer();
 
@@ -48,6 +53,10 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         String furigana;
         String kana;
         String source;
+        
+        public boolean typeKanji() {
+            return kanji != null;
+        }
     }
     @AllArgsConstructor
     @Builder
@@ -64,7 +73,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
             return japaneseLine.parsedTokens.stream()
                     .flatMap(it -> it.getSubTokens().stream())
                     .map(it -> {
-                        if (it.kanji != null) {
+                        if (it.typeKanji()) {
                             return String.format("%s(%s)",
                                     it.kanji,
                                     it.furigana
@@ -86,7 +95,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                     .flatMap(parsedToken -> parsedToken.getSubTokens().stream())
                     .map(subToken -> {
                         StringBuilder stringBuilder = new StringBuilder();
-                        if (subToken.kanji != null) {
+                        if (subToken.typeKanji()) {
                             stringBuilder.append(subToken.kanji);
                         } else {
                             stringBuilder.append(subToken.kana);
@@ -102,8 +111,14 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     @Builder
     @Data
     public static class JapaneseParsedToken {
-        String des;
+        int index;
+        String surface;
+        String partOfSpeechLevel1;
         List<JapaneseSubToken> subTokens;
+
+        public boolean typeKanji() {
+            return subTokens.stream().anyMatch(it -> it.typeKanji());
+        }
     }
     
     private static List<JapaneseSubToken> parseKanjiToken(Token token) {
@@ -121,7 +136,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                                 .kanji(c)
                                 .source(token.getSurface())
                                 .build();
-                    } else if (currentSubToken.kanji != null) {
+                    } else if (currentSubToken.typeKanji()) {
                         currentSubToken.kanji += c;
                     } else {
                         subTokens.add(currentSubToken);
@@ -188,25 +203,28 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
     public static JapaneseLine toParsedLinesCore(String line) {
         List<Token> tokens = tokenizer.tokenize(line);
-        List<JapaneseParsedToken> parsedTokens = tokens.stream()
-                .map(token -> {
-                    boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
-                    List<JapaneseSubToken> subTokens;
-                    if (hasKanji) {
-                        subTokens = parseKanjiToken(token);
-                    } else {
-                        subTokens = List.of(
-                                JapaneseSubToken.builder()
-                                        .kana(token.getSurface())
-                                        .build()
-                        );
-                    }
-                    return JapaneseParsedToken.builder()
-                            .des(token.getPartOfSpeechLevel1())
-                            .subTokens(subTokens)
-                            .build();
-                })
-                .collect(Collectors.toList());
+        List<JapaneseParsedToken> parsedTokens = new ArrayList<>();
+        for (int i = 0; i < tokens.size(); i++) {
+            var token = tokens.get(i);
+            boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
+            List<JapaneseSubToken> subTokens;
+            if (hasKanji) {
+                subTokens = parseKanjiToken(token);
+            } else {
+                subTokens = List.of(
+                        JapaneseSubToken.builder()
+                                .kana(token.getSurface())
+                                .build()
+                );
+            }
+            var result = JapaneseParsedToken.builder()
+                    .index(i)
+                    .surface(token.getSurface())
+                    .partOfSpeechLevel1(token.getPartOfSpeechLevel1())
+                    .subTokens(subTokens)
+                    .build();
+            parsedTokens.add(result);
+        }
         return JapaneseLine.builder()
                 .parsedTokens(parsedTokens)
                 .build();
@@ -222,7 +240,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
             line.getParsedTokens().stream()
                     .forEach(parsedToken -> {
                         parsedToken.subTokens.forEach(subToken -> {
-                            if (subToken.kanji != null) {
+                            if (subToken.typeKanji()) {
                                 if (!map.containsKey(subToken.kanji)) {
                                     map.put(subToken.kanji, KanjiPronunciationPackage.builder()
                                             .kanji(subToken.kanji)
