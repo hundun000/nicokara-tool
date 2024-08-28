@@ -4,7 +4,6 @@ import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
 import hundun.nicokaratool.base.lyrics.ILyricsRender;
-import hundun.nicokaratool.base.lyrics.LyricLine;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
@@ -55,7 +54,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     @Data
     public static class JapaneseLine {
         List<JapaneseParsedToken> parsedTokens;
-
+        String chinese;
     }
 
     public static class SimpleLyricsRender implements ILyricsRender<JapaneseLine> {
@@ -103,16 +102,14 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     @Builder
     @Data
     public static class JapaneseParsedToken {
+        String des;
         List<JapaneseSubToken> subTokens;
     }
     
-    private static JapaneseParsedToken parseToken(Token token) {
-        JapaneseParsedToken result = JapaneseParsedToken.builder()
-                .subTokens(new ArrayList<>())
-                .build();
+    private static List<JapaneseSubToken> parseKanjiToken(Token token) {
+        List<JapaneseSubToken> subTokens = new ArrayList<>();
         String surface = token.getSurface();
         String rawPronunciation = token.getReading();
-
 
         {
             JapaneseSubToken currentSubToken = null;
@@ -127,7 +124,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                     } else if (currentSubToken.kanji != null) {
                         currentSubToken.kanji += c;
                     } else {
-                        result.subTokens.add(currentSubToken);
+                        subTokens.add(currentSubToken);
                         currentSubToken = JapaneseSubToken.builder()
                                 .kanji(c)
                                 .source(token.getSurface())
@@ -143,7 +140,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                     } else if (currentSubToken.kana != null) {
                         currentSubToken.kana += hiragana;
                     } else {
-                        result.subTokens.add(currentSubToken);
+                        subTokens.add(currentSubToken);
                         currentSubToken = JapaneseSubToken.builder()
                                 .kana(hiragana)
                                 .source(token.getSurface())
@@ -151,19 +148,19 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                     }
                 }
             }
-            result.subTokens.add(currentSubToken);
+            subTokens.add(currentSubToken);
         }
 
         // 逐步截取分配到各个furigana上；
         String unusedPronunciation = mojiHelper.katakanaToHiragana(rawPronunciation);
         JapaneseSubToken handlingKanjiNode = null;
-        for (int i = result.subTokens.size() - 1; i >= 0; i--) {
-            JapaneseSubToken node = result.subTokens.get(i);
+        for (int i = subTokens.size() - 1; i >= 0; i--) {
+            JapaneseSubToken node = subTokens.get(i);
             if (node.kana != null) {
                 int kanaIndex = unusedPronunciation.lastIndexOf(node.kana);
                 if (handlingKanjiNode != null) {
                     if (kanaIndex < 0) {
-                        throw new RuntimeException(node.kana + " not in " + unusedPronunciation + ", result.nodes = " + result.subTokens + ", rawPronunciation = " + rawPronunciation);
+                        throw new RuntimeException(node.kana + " not in " + unusedPronunciation + ", result.nodes = " + subTokens + ", rawPronunciation = " + rawPronunciation);
                     }
                     handlingKanjiNode.furigana = unusedPronunciation.substring(
                             kanaIndex + node.kana.length()
@@ -178,8 +175,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         if (handlingKanjiNode != null) {
             handlingKanjiNode.furigana = unusedPronunciation;
         }
-
-        return result;
+        return subTokens;
     }
 
 
@@ -195,17 +191,20 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         List<JapaneseParsedToken> parsedTokens = tokens.stream()
                 .map(token -> {
                     boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
+                    List<JapaneseSubToken> subTokens;
                     if (hasKanji) {
-                        return parseToken(token);
+                        subTokens = parseKanjiToken(token);
                     } else {
-                        return JapaneseParsedToken.builder()
-                                .subTokens(List.of(
-                                        JapaneseSubToken.builder()
-                                                .kana(token.getSurface())
-                                                .build()
-                                ))
-                                .build();
+                        subTokens = List.of(
+                                JapaneseSubToken.builder()
+                                        .kana(token.getSurface())
+                                        .build()
+                        );
                     }
+                    return JapaneseParsedToken.builder()
+                            .des(token.getPartOfSpeechLevel1())
+                            .subTokens(subTokens)
+                            .build();
                 })
                 .collect(Collectors.toList());
         return JapaneseLine.builder()
