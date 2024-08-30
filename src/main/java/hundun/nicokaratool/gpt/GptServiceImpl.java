@@ -23,12 +23,14 @@ public class GptServiceImpl {
     static ObjectMapper objectMapper = new ObjectMapper();
     private static String authorization;
 
-    IGptChatFeignClient gptChatFeignClient = IGptChatFeignClient.instance();
+    static IGptChatFeignClient gptChatFeignClient;
 
     static {
         try {
             JsonNode secretFile = objectMapper.readTree(new File("data/Secret/secret.json"));
             authorization = secretFile.get("gptKey").asText();
+            JsonNode proxy = secretFile.get("proxy");
+            gptChatFeignClient = IGptChatFeignClient.instance(proxy);
         } catch (IOException e) {
             log.error("bad secretFile read:", e);
         }
