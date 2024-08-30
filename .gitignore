@@ -1,6 +1,7 @@
 data/*
 cache/*
 !data/example*
+!data/Fonts
 
 ### Gradle ###
 .gradle
