@@ -1,11 +1,8 @@
-package hundun.nicokaratool.japanese;
+package hundun.nicokaratool.remote;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import hundun.nicokaratool.cantonese.PycantoneseFeignClient;
-import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
-import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleResponse;
-import hundun.nicokaratool.japanese.MojiDictFeignClient.MojiDictRequest;
+import hundun.nicokaratool.japanese.JapaneseService;
+import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictRequest;
 import org.junit.Test;
 
 public class MojiDictFeignClientTest {

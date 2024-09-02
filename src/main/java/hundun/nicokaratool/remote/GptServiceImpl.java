@@ -1,18 +1,14 @@
-package hundun.nicokaratool.gpt;
+package hundun.nicokaratool.remote;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import hundun.nicokaratool.gpt.IGptChatFeignClient.GptAskRequest;
-import hundun.nicokaratool.gpt.IGptChatFeignClient.GptAskResponse;
-import hundun.nicokaratool.gpt.IGptChatFeignClient.GptChatHistory;
+import hundun.nicokaratool.base.SecretConfig;
+import hundun.nicokaratool.remote.IGptChatFeignClient.GptAskRequest;
+import hundun.nicokaratool.remote.IGptChatFeignClient.GptAskResponse;
+import hundun.nicokaratool.remote.IGptChatFeignClient.GptChatHistory;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,21 +16,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GptServiceImpl {
 
-    static ObjectMapper objectMapper = new ObjectMapper();
-    private static String authorization;
 
-    static IGptChatFeignClient gptChatFeignClient;
+    IGptChatFeignClient gptChatFeignClient;
 
-    static {
-        try {
-            JsonNode secretFile = objectMapper.readTree(new File("data/Secret/secret.json"));
-            authorization = secretFile.get("gptKey").asText();
-            JsonNode proxy = secretFile.get("proxy");
-            gptChatFeignClient = IGptChatFeignClient.instance(proxy);
-        } catch (IOException e) {
-            log.error("bad secretFile read:", e);
-        }
+    public GptServiceImpl() {
+        gptChatFeignClient = IGptChatFeignClient.instance(SecretConfig.proxy);
     }
+
     public enum LlmModel {
         BAIDU("USELESS"),
         BAIDU_PRO("USELESS"),
@@ -132,7 +120,7 @@ public class GptServiceImpl {
         var headers = Map.of(
                 "Content-Type", "application/json",
                 "Accept", "application/json",
-                "Authorization", "Bearer " + authorization
+                "Authorization", "Bearer " + SecretConfig.gptAuthorization
         );
         GptAskResponse response = gptChatFeignClient.ask(headers, request);
         log.info("response: {}", response);

@@ -21,8 +21,10 @@ public class Cell {
     public static final int ySpace = 5;
     public static final int defaultSingleCellMaxWidth = 100;
 
+    int tempLayoutWidth;
     int layoutWidth;
     int preferredWidth;
+    boolean casePreferredWidthFromRawText;
     int preferredHeight;
     int layoutHeight;
     int fontSize;
@@ -39,15 +41,18 @@ public class Cell {
      */
     public void update(Table table, @Nullable Cell aboveCell) {
         this.layer = aboveCell == null ? 0 : aboveCell.getLayer() + 1;
-        int preferredWidth = xSpace * 2 + (rawText.length() * fontSize);
+        int preferredWidthFromRawText = Math.min(xSpace * 2 + (rawText.length() * fontSize), defaultSingleCellMaxWidth);
         if (belowCells != null) {
             belowCells.forEach(it -> it.update(table, this));
-            int belowCellsSumLayoutWidth = belowCells.stream()
+            int belowCellsSumWidth = belowCells.stream()
                     .mapToInt(it -> it.getPreferredWidth())
                     .sum();
-            this.preferredWidth = Math.max(belowCellsSumLayoutWidth, Math.min(preferredWidth, belowCells.size() * defaultSingleCellMaxWidth));
+            this.preferredWidth = Math.max(belowCellsSumWidth, preferredWidthFromRawText);
+            if (this.preferredWidth == preferredWidthFromRawText) {
+                this.casePreferredWidthFromRawText = true;
+            }
         } else {
-            this.preferredWidth = Math.min(preferredWidth, defaultSingleCellMaxWidth);
+            this.preferredWidth = preferredWidthFromRawText;
         }
         int charPerLine = fontSize == 0 ? 0 : (this.preferredWidth / fontSize);
         int lineCount = charPerLine == 0 ? 0 : ((rawText.length() / charPerLine) + (rawText.length() % charPerLine != 0 ? 1 : 0));
@@ -70,14 +75,22 @@ public class Cell {
 
 
     public void update2(Table table, @Nullable Cell aboveCell) {
+        // tempLayoutWidth before child
         if (aboveCell == null) {
-            this.layoutWidth = this.preferredWidth;
+            this.tempLayoutWidth = this.preferredWidth;
         } else {
-            this.layoutWidth = Math.max(this.preferredWidth, aboveCell.layoutWidth / aboveCell.getBelowCells().size());
+            this.tempLayoutWidth = Math.max(this.preferredWidth, aboveCell.tempLayoutWidth / aboveCell.getBelowCells().size());
         }
         if (belowCells != null) {
             belowCells.forEach(it -> it.layoutHeight = table.getLayerCellsMaxPreferredHeightMap().get(it.getLayer()));
             belowCells.forEach(it -> it.update2(table, this));
+            // layoutWidth after child
+            int belowCellsSumWidth = belowCells.stream()
+                    .mapToInt(it -> it.getLayoutWidth())
+                    .sum();
+            this.layoutWidth = Math.max(belowCellsSumWidth, this.tempLayoutWidth);
+        } else {
+            this.layoutWidth = this.tempLayoutWidth;
         }
     }
 

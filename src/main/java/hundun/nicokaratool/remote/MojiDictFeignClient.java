@@ -1,9 +1,9 @@
-package hundun.nicokaratool.japanese;
+package hundun.nicokaratool.remote;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import feign.Headers;
 import feign.RequestLine;
-import hundun.nicokaratool.japanese.MojiDictFeignClient.MojiDictRequest.Function.Params;
+import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictRequest.Function.Params;
 import hundun.nicokaratool.util.FeignClientFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

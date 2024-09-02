@@ -1,7 +1,6 @@
-package hundun.nicokaratool;
+package hundun.nicokaratool.remote;
 
-import hundun.nicokaratool.gpt.GptServiceImpl;
-import hundun.nicokaratool.gpt.GptServiceImpl.LlmModel;
+import hundun.nicokaratool.remote.GptServiceImpl.LlmModel;
 import org.junit.Test;
 
 public class GptServiceImplTest {

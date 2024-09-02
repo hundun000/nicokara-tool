@@ -37,7 +37,6 @@ public class JapaneseServiceTest {
     public void testTable2() throws JsonProcessingException {
         String text = "お寿司が食べたい";
         JapaneseLine line = service.toParsedLines(List.of(text), null).get(0);
-        line.setChinese("我想吃寿司。一段长长长长长长长长长长长长长长长长长长长长长长长长长长文本！");
         Table table = mainService.fromLineWithHint(line);
         System.out.println(objectMapper.writeValueAsString(table));
         table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_output.png");

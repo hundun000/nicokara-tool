@@ -19,15 +19,18 @@ import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
+import hundun.nicokaratool.remote.GoogleServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * @author hundun
  * Created on 2023/03/08
  */
+@Slf4j
 public class JapaneseService extends BaseService<JapaneseLine> {
 
     public static ObjectMapper objectMapper = new ObjectMapper();
@@ -36,6 +39,8 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
     static final Tokenizer tokenizer = new Tokenizer();
+
+    GoogleServiceImpl googleService = new GoogleServiceImpl();
 
     protected JapaneseService() {
         super(NicokaraLyricsRender.INSTANCE);
@@ -196,7 +201,18 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
     @Override
     protected List<JapaneseLine> toParsedLines(List<String> lines, @Nullable RootHint rootHint) {
-        return lines.stream().map(it -> toParsedLinesCore(it)).collect(Collectors.toList());
+        return lines.stream()
+                .map(it -> {
+                    var result = toParsedLinesCore(it);
+                    try {
+                        result.setChinese(googleService.translateJaToZh(it));
+                    } catch (Exception e) {
+                        log.error("bad googleService.translateJaToZh: ", e);
+                        result.setChinese("Error: " + e.getMessage());
+                    }
+                    return result;
+                })
+                .collect(Collectors.toList());
     }
 
 
