@@ -27,6 +27,7 @@ public class Table {
     Cell dummyRootCell;
     int depthBound;
     int rightBound;
+    int align = Align.center;
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 

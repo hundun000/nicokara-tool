@@ -45,6 +45,7 @@ public class MainService {
     @AllArgsConstructor
     @Builder
     public static class TableHint {
+        Integer align;
         Map<Integer, SearchResultItem> parsedTokensIndexToMojiHintMap;
     }
 
@@ -55,7 +56,7 @@ public class MainService {
         return fromLine(line, tableHint);
     }
 
-    private static Table fromLine(JapaneseLine line, TableHint tableHint) {
+    public static Table fromLine(JapaneseLine line, TableHint tableHint) {
         Cell chineseRootCell = Cell.builder()
                 .rawText(line.getChinese())
                 .fontSize(KANJI_FONT_SIZE)
@@ -71,6 +72,9 @@ public class MainService {
                 .belowCells(List.of(chineseRootCell))
                 .build();
         Table table = new Table();
+        if (tableHint.align != null) {
+            table.setAlign(tableHint.align);
+        }
         table.setTableHint(tableHint);
         table.setDummyRootCell(dummyRootCell);
 

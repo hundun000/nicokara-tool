@@ -17,19 +17,36 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Cell {
-    public static final int xSpace = 5;
-    public static final int ySpace = 5;
-    public static final int defaultSingleCellMaxWidth = 100;
+    public static final int xPreferredSpace = 5;
+    public static final int yPreferredSpace = 5;
+    /**
+     * 不含xPreferredSpace的ContextMaxWidth
+     */
+    public static final int defaultSingleContentMaxWidth = 100;
 
     int tempLayoutWidth;
     int layoutWidth;
     int preferredWidth;
-    boolean casePreferredWidthFromRawText;
+    int contentWidth;
     int preferredHeight;
     int layoutHeight;
     int fontSize;
+    /**
+     * cell在table的位置，均基于左上角
+     */
     int xInTable;
+    /**
+     * cell在table的位置，均基于左上角
+     */
     int yInTable;
+    /**
+     * Content在cell的位置，均基于左上角
+     */
+    int xContentInCell;
+    /**
+     * Content在cell的位置，均基于左上角
+     */
+    int yContentInCell;
     String rawText;
     List<String> wrappedText;
     List<Cell> belowCells;
@@ -41,28 +58,26 @@ public class Cell {
      */
     public void update(Table table, @Nullable Cell aboveCell) {
         this.layer = aboveCell == null ? 0 : aboveCell.getLayer() + 1;
-        int preferredWidthFromRawText = Math.min(xSpace * 2 + (rawText.length() * fontSize), defaultSingleCellMaxWidth);
+        int preferredWidthFromRawText = Math.min((rawText.length() * fontSize), defaultSingleContentMaxWidth);
         if (belowCells != null) {
             belowCells.forEach(it -> it.update(table, this));
-            int belowCellsSumWidth = belowCells.stream()
+            int belowCellsSumPreferredWidth = belowCells.stream()
                     .mapToInt(it -> it.getPreferredWidth())
                     .sum();
-            this.preferredWidth = Math.max(belowCellsSumWidth, preferredWidthFromRawText);
-            if (this.preferredWidth == preferredWidthFromRawText) {
-                this.casePreferredWidthFromRawText = true;
-            }
+            this.preferredWidth = Math.max(belowCellsSumPreferredWidth, xPreferredSpace * 2 + preferredWidthFromRawText);
         } else {
-            this.preferredWidth = preferredWidthFromRawText;
+            this.preferredWidth = xPreferredSpace * 2 + preferredWidthFromRawText;
         }
-        int charPerLine = fontSize == 0 ? 0 : (this.preferredWidth / fontSize);
-        int lineCount = charPerLine == 0 ? 0 : ((rawText.length() / charPerLine) + (rawText.length() % charPerLine != 0 ? 1 : 0));
-        this.preferredHeight = ySpace * 2 + lineCount * fontSize;
+        int charPerLineMax = rawText.length() == 0 ? 0 : (this.preferredWidth / fontSize);
+        this.contentWidth = Math.min(rawText.length(), charPerLineMax) * fontSize;
+        int lineCount = charPerLineMax == 0 ? 1 : ((rawText.length() / charPerLineMax) + (rawText.length() % charPerLineMax != 0 ? 1 : 0));
+        this.preferredHeight = yPreferredSpace * 2 + lineCount * fontSize;
         table.getLayerCellsMaxPreferredHeightMap().merge(this.layer, preferredHeight, (o1, o2) -> Math.max(o1, o2));
         List<String> wrappedTextBuilder = new ArrayList<>();
         StringBuilder wrappedTextLine = new StringBuilder();
         for (int i = 0; i < rawText.length(); i++) {
             wrappedTextLine.append(rawText.charAt(i));
-            if (i % charPerLine == charPerLine - 1) {
+            if (i % charPerLineMax == charPerLineMax - 1) {
                 wrappedTextBuilder.add(wrappedTextLine.toString());
                 wrappedTextLine.setLength(0);
             }
@@ -102,6 +117,20 @@ public class Cell {
             this.xInTable = aboveCell.getXInTable() + xInParent;
             this.yInTable = aboveCell.getYInTable() + aboveCell.getLayoutHeight();
         }
+        if (Align.isLeft(table.getAlign())) {
+            this.xContentInCell = 0;
+        } else if (Align.isCenterHorizontal(table.getAlign())) {
+            this.xContentInCell = (this.layoutWidth - this.contentWidth) / 2;
+        } else {
+            this.xContentInCell = this.layoutWidth - this.contentWidth;
+        }
+        if (Align.isTop(table.getAlign())) {
+            this.yContentInCell = 0;
+        } else if (Align.isCenterVertical(table.getAlign())) {
+            this.yContentInCell = (this.layoutHeight - this.preferredHeight) / 2;
+        } else {
+            this.yContentInCell = this.layoutHeight - this.preferredHeight;
+        }
         if (belowCells != null) {
             int childXInCurrent = 0;
             for (var belowCell : belowCells) {
@@ -129,13 +158,34 @@ public class Cell {
 
     public void draw(DrawContext drawContext) {
         Paint fill = new Paint().setColor(0xFF000000);
+        Paint debugFill = new Paint().setColor(0xFF8B0000);
         if (wrappedText.size() > 0) {
             Font font = new Font(drawContext.getFace(), fontSize);
             for (int i = 0; i < wrappedText.size(); i++) {
-                drawContext.getCanvas().drawString(wrappedText.get(i), xInTable, yInTable + fontSize * (i + 1), font, fill);
+                drawContext.getCanvas().drawString(
+                        wrappedText.get(i),
+                        xInTable + xContentInCell,
+                        yInTable + yContentInCell + fontSize * (i + 1),
+                        font,
+                        fill);
             }
+            Point[] contentCoords = new Point[] {
+                    // up
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell),
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
+                    // right
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + layoutHeight),
+                    // down
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + layoutHeight),
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + layoutHeight),
+                    // left
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + layoutHeight),
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell),
+            };
+            drawContext.getCanvas().drawLines(contentCoords, debugFill);
         }
-        Point[] coords = new Point[] {
+        Point[] cellCoords = new Point[] {
                 // up
                 new Point(xInTable, yInTable),
                 new Point(xInTable + layoutWidth, yInTable),
@@ -149,7 +199,7 @@ public class Cell {
                 new Point(xInTable, yInTable + layoutHeight),
                 new Point(xInTable, yInTable),
         };
-        drawContext.getCanvas().drawLines(coords, fill);
+        drawContext.getCanvas().drawLines(cellCoords, fill);
         if (belowCells != null) {
             for (var belowCell : belowCells) {
                 belowCell.draw(drawContext);
