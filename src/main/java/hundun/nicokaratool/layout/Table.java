@@ -1,13 +1,8 @@
 package hundun.nicokaratool.layout;
 
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
-import hundun.nicokaratool.japanese.MainService.TableHint;
+import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Cell.DrawContext;
 import io.github.humbleui.skija.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 
 import java.io.IOException;
@@ -16,18 +11,17 @@ import java.nio.channels.ByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Data
 public class Table {
 
-    TableHint tableHint;
     Cell dummyRootCell;
     int depthBound;
     int rightBound;
     int align = Align.center;
+    int xPreferredSpace = 5;
+    int yPreferredSpace = 5;
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 

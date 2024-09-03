@@ -7,9 +7,11 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
 import hundun.nicokaratool.japanese.MainService;
-import hundun.nicokaratool.japanese.MainService.TableHint;
+import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Align;
 import hundun.nicokaratool.layout.Table;
+import hundun.nicokaratool.layout.TableBuilder;
+import hundun.nicokaratool.layout.TableBuilder.CellBuilder;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -26,68 +28,33 @@ public class TableTest {
 
     @Test
     public void testTable1() throws JsonProcessingException {
-        JapaneseLine line = JapaneseLine.builder()
-                .chinese("一段中文翻译。")
-                .parsedTokens(List.of(
-                        JapaneseParsedToken.builder()
-                                .partOfSpeechLevel1("一阶语法分析")
-                                .subTokens(List.of(
-                                        JapaneseSubToken.builder()
-                                                .kana("ふう")
-                                                .build(),
-                                        JapaneseSubToken.builder()
-                                                .kanji("汉字长长长长长长长长长长长长长长长长长长长长文本")
-                                                .furigana("ふりがな")
-                                                .build(),
-                                        JapaneseSubToken.builder()
-                                                .kana("ばる")
-                                                .build()
-                                ))
-                                .build()
-                ))
-                .build();
-        testCore(line, "testTable1");
-    }
+        String testName = "testTable";
+        TableBuilder tableBuilder = new TableBuilder();
+        var cellBuilder1 = CellBuilder.get("文本一", 20);
+        tableBuilder.getDummyRootCell().getBelowCells().add(cellBuilder1);
 
-    @Test
-    public void testTable2() throws JsonProcessingException {
-        JapaneseLine line = JapaneseLine.builder()
-                .chinese("一段中文翻译，长长长长长长长长长长长长长长长长长长长长文本。")
-                .parsedTokens(List.of(
-                        JapaneseParsedToken.builder()
-                                .partOfSpeechLevel1("一阶语法分析")
-                                .subTokens(List.of(
-                                        JapaneseSubToken.builder()
-                                                .kana("ふう")
-                                                .build(),
-                                        JapaneseSubToken.builder()
-                                                .kanji("汉字")
-                                                .furigana("ふりがな")
-                                                .build(),
-                                        JapaneseSubToken.builder()
-                                                .kana("ばる")
-                                                .build()
-                                ))
-                                .build()
-                ))
-                .build();
-        testCore(line, "testTable2");
-    }
+        var cellBuilder11 = CellBuilder.get("文本一一", 20);
+        cellBuilder1.getBelowCells().add(cellBuilder11);
+        var cellBuilder12 = CellBuilder.get("文本一二", 20);
+        cellBuilder1.getBelowCells().add(cellBuilder12);
 
-    private void testCore(JapaneseLine line, String subName) throws JsonProcessingException {
+        var cellBuilder111 = CellBuilder.get("文本一一一", 10);
+        cellBuilder11.getBelowCells().add(cellBuilder111);
+        var cellBuilder112 = CellBuilder.get("文本一一二", 10);
+        cellBuilder11.getBelowCells().add(cellBuilder112);
+        var cellBuilder121 = CellBuilder.get("文本一二一", 10);
+        cellBuilder12.getBelowCells().add(cellBuilder121);
+
         Table table;
-        TableHint tableHint = TableHint.builder()
-                .parsedTokensIndexToMojiHintMap(new HashMap<>())
-                .build();
         int i = 0;
-        table = MainService.fromLine(line, tableHint);
+        table = tableBuilder.build();
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER + subName + "_default_output.png");
+        table.draw(TEST_OUTPUT_FOLDER + testName + "_default_output.png");
 
-        tableHint.setAlign(Align.right);
-        table = MainService.fromLine(line, tableHint);
+        tableBuilder.setAlign(Align.right);
+        table = tableBuilder.build();
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER + subName + "_right_output.png");
+        table.draw(TEST_OUTPUT_FOLDER + testName + "_right_output.png");
     }
 
 

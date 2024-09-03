@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
+import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Table;
+import hundun.nicokaratool.layout.TableBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,10 +35,25 @@ public class JapaneseServiceTest {
 
     @Test
     public void testTable2() throws JsonProcessingException {
+        testTableCore(0);
+    }
+
+    @Test
+    public void testTable3() throws JsonProcessingException {
+        testTableCore(5);
+    }
+
+    private void testTableCore(int space) throws JsonProcessingException {
         String text = "お寿司が食べたい";
         JapaneseLine line = service.toParsedLines(List.of(text), null).get(0);
-        Table table = mainService.fromLineWithHint(line);
+        JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
+                .parsedTokensIndexToMojiHintMap(mainService.getMojiHintMap(line))
+                .build();
+        TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
+        tableBuilder.setXPreferredSpace(space);
+        tableBuilder.setYPreferredSpace(space);
+        Table table = tableBuilder.build();
         System.out.println(objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_output.png");
+        table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_space" + space + "_output.png");
     }
 }

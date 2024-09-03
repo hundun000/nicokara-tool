@@ -17,8 +17,6 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Cell {
-    public static final int xPreferredSpace = 5;
-    public static final int yPreferredSpace = 5;
     /**
      * 不含xPreferredSpace的ContextMaxWidth
      */
@@ -28,6 +26,7 @@ public class Cell {
     int layoutWidth;
     int preferredWidth;
     int contentWidth;
+    int contentHeight;
     int preferredHeight;
     int layoutHeight;
     int fontSize;
@@ -64,14 +63,15 @@ public class Cell {
             int belowCellsSumPreferredWidth = belowCells.stream()
                     .mapToInt(it -> it.getPreferredWidth())
                     .sum();
-            this.preferredWidth = Math.max(belowCellsSumPreferredWidth, xPreferredSpace * 2 + preferredWidthFromRawText);
+            this.preferredWidth = Math.max(belowCellsSumPreferredWidth, table.xPreferredSpace * 2 + preferredWidthFromRawText);
         } else {
-            this.preferredWidth = xPreferredSpace * 2 + preferredWidthFromRawText;
+            this.preferredWidth = table.xPreferredSpace * 2 + preferredWidthFromRawText;
         }
         int charPerLineMax = rawText.length() == 0 ? 0 : (this.preferredWidth / fontSize);
         this.contentWidth = Math.min(rawText.length(), charPerLineMax) * fontSize;
-        int lineCount = charPerLineMax == 0 ? 1 : ((rawText.length() / charPerLineMax) + (rawText.length() % charPerLineMax != 0 ? 1 : 0));
-        this.preferredHeight = yPreferredSpace * 2 + lineCount * fontSize;
+        int lineCount = rawText.length() == 0 ? 1 : ((rawText.length() / charPerLineMax) + (rawText.length() % charPerLineMax != 0 ? 1 : 0));
+        this.preferredHeight = table.yPreferredSpace * 2 + lineCount * fontSize;
+        this.contentHeight = rawText.length() == 0 ? 0 :lineCount * fontSize;
         table.getLayerCellsMaxPreferredHeightMap().merge(this.layer, preferredHeight, (o1, o2) -> Math.max(o1, o2));
         List<String> wrappedTextBuilder = new ArrayList<>();
         StringBuilder wrappedTextLine = new StringBuilder();
@@ -127,9 +127,9 @@ public class Cell {
         if (Align.isTop(table.getAlign())) {
             this.yContentInCell = 0;
         } else if (Align.isCenterVertical(table.getAlign())) {
-            this.yContentInCell = (this.layoutHeight - this.preferredHeight) / 2;
+            this.yContentInCell = (this.layoutHeight - this.contentHeight) / 2;
         } else {
-            this.yContentInCell = this.layoutHeight - this.preferredHeight;
+            this.yContentInCell = this.layoutHeight - this.contentHeight;
         }
         if (belowCells != null) {
             int childXInCurrent = 0;
@@ -175,12 +175,12 @@ public class Cell {
                     new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
                     // right
                     new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + layoutHeight),
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
                     // down
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + layoutHeight),
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + layoutHeight),
+                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
                     // left
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + layoutHeight),
+                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
                     new Point(xInTable + xContentInCell, yInTable + yContentInCell),
             };
             drawContext.getCanvas().drawLines(contentCoords, debugFill);
