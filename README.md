@@ -2,6 +2,15 @@
 
 由程序为歌词生成注音（含NLP判断多音字的读音），并以NicokaraMaker的格式（@Ruby）输出。
 
+#### next WIP
+
+由程序为歌词生成日语语法分析和整句翻译等，输出为图片/视频。
+
+![image](./doc/1.png)
+
+单词释义：Moji api  
+整句翻译：Google翻译
+
 #### 1. 为日语汉字注音假名
 
 由[kuromoji](https://github.com/atilika/kuromoji)提供日语NLP。

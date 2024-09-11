@@ -22,6 +22,7 @@ public class Table {
     int align = Align.center;
     int xPreferredSpace = 5;
     int yPreferredSpace = 5;
+    boolean debug;
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 

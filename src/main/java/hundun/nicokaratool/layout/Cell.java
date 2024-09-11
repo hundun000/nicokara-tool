@@ -1,5 +1,6 @@
 package hundun.nicokaratool.layout;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.humbleui.skija.Canvas;
 import io.github.humbleui.skija.Font;
 import io.github.humbleui.skija.Paint;
@@ -8,6 +9,7 @@ import io.github.humbleui.types.Point;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -21,7 +23,9 @@ public class Cell {
      * 不含xPreferredSpace的ContextMaxWidth
      */
     public static final int defaultSingleContentMaxWidth = 100;
-
+    @JsonIgnore
+    @ToString.Exclude
+    Table table;
     int tempLayoutWidth;
     int layoutWidth;
     int preferredWidth;
@@ -56,6 +60,7 @@ public class Cell {
      * 并未被决定；
      */
     public void update(Table table, @Nullable Cell aboveCell) {
+        this.table = table;
         this.layer = aboveCell == null ? 0 : aboveCell.getLayer() + 1;
         int preferredWidthFromRawText = Math.min((rawText.length() * fontSize), defaultSingleContentMaxWidth);
         if (belowCells != null) {
@@ -155,10 +160,9 @@ public class Cell {
         Canvas canvas;
         Typeface face;
     }
-
+    static Paint fill = new Paint().setColor(0xFF000000);
+    static Paint debugFill = new Paint().setColor(0xFF8B0000);
     public void draw(DrawContext drawContext) {
-        Paint fill = new Paint().setColor(0xFF000000);
-        Paint debugFill = new Paint().setColor(0xFF8B0000);
         if (wrappedText.size() > 0) {
             Font font = new Font(drawContext.getFace(), fontSize);
             for (int i = 0; i < wrappedText.size(); i++) {
@@ -169,21 +173,23 @@ public class Cell {
                         font,
                         fill);
             }
-            Point[] contentCoords = new Point[] {
-                    // up
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell),
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
-                    // right
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
-                    // down
-                    new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
-                    // left
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
-                    new Point(xInTable + xContentInCell, yInTable + yContentInCell),
-            };
-            drawContext.getCanvas().drawLines(contentCoords, debugFill);
+            if (table.isDebug()) {
+                Point[] contentCoords = new Point[] {
+                        // up
+                        new Point(xInTable + xContentInCell, yInTable + yContentInCell),
+                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
+                        // right
+                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
+                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
+                        // down
+                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
+                        new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
+                        // left
+                        new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
+                        new Point(xInTable + xContentInCell, yInTable + yContentInCell),
+                };
+                drawContext.getCanvas().drawLines(contentCoords, debugFill);
+            }
         }
         Point[] cellCoords = new Point[] {
                 // up

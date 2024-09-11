@@ -32,6 +32,10 @@ public class TableBuilder {
                 .build();
     }
 
+    public TableBuilder addFirstLayerCell(CellBuilder cellBuilder) {
+        dummyRootCell.belowCells.add(cellBuilder);
+        return this;
+    }
 
     public static TableBuilder fromJapaneseLine(JapaneseLine line, JapaneseExtraHint japaneseExtraHint) {
         CellBuilder chineseRootCell = CellBuilder.builder()
@@ -82,6 +86,10 @@ public class TableBuilder {
         int fontSize;
         List<CellBuilder> belowCells;
 
+        public CellBuilder addBelowCell(CellBuilder cellBuilder) {
+            belowCells.add(cellBuilder);
+            return this;
+        }
 
         public static CellBuilder get(String rawText, int fontSize) {
             return CellBuilder.builder()

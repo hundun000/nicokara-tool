@@ -33,10 +33,6 @@ public class JapaneseServiceTest {
         System.out.println(serviceResult.getRuby());
     }
 
-    @Test
-    public void testTable2() throws JsonProcessingException {
-        testTableCore(0);
-    }
 
     @Test
     public void testTable3() throws JsonProcessingException {
@@ -44,7 +40,7 @@ public class JapaneseServiceTest {
     }
 
     private void testTableCore(int space) throws JsonProcessingException {
-        String text = "お寿司が食べたい";
+        String text = "大切な思い出を";
         JapaneseLine line = service.toParsedLines(List.of(text), null).get(0);
         JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
                 .parsedTokensIndexToMojiHintMap(mainService.getMojiHintMap(line))
