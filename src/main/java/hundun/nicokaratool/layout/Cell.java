@@ -163,47 +163,47 @@ public class Cell {
     static Paint fill = new Paint().setColor(0xFF000000);
     static Paint debugFill = new Paint().setColor(0xFF8B0000);
     public void draw(DrawContext drawContext) {
-        if (wrappedText.size() > 0) {
+        if (!wrappedText.isEmpty()) {
             Font font = new Font(drawContext.getFace(), fontSize);
             for (int i = 0; i < wrappedText.size(); i++) {
                 drawContext.getCanvas().drawString(
                         wrappedText.get(i),
-                        xInTable + xContentInCell,
-                        yInTable + yContentInCell + fontSize * (i + 1),
+                        table.getX() + xInTable + xContentInCell,
+                         table.getY() + yInTable + yContentInCell + fontSize * (i + 1),
                         font,
                         fill);
             }
             if (table.isDebug()) {
                 Point[] contentCoords = new Point[] {
                         // up
-                        new Point(xInTable + xContentInCell, yInTable + yContentInCell),
-                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
+                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell),
+                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell),
                         // right
-                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell),
-                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
+                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell),
+                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell + contentHeight),
                         // down
-                        new Point(xInTable + xContentInCell + contentWidth, yInTable + yContentInCell + contentHeight),
-                        new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
+                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell + contentHeight),
+                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell + contentHeight),
                         // left
-                        new Point(xInTable + xContentInCell, yInTable + yContentInCell + contentHeight),
-                        new Point(xInTable + xContentInCell, yInTable + yContentInCell),
+                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell + contentHeight),
+                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell),
                 };
                 drawContext.getCanvas().drawLines(contentCoords, debugFill);
             }
         }
         Point[] cellCoords = new Point[] {
                 // up
-                new Point(xInTable, yInTable),
-                new Point(xInTable + layoutWidth, yInTable),
+                new Point(table.getX() + xInTable, table.getY() + yInTable),
+                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable),
                 // right
-                new Point(xInTable + layoutWidth, yInTable),
-                new Point(xInTable + layoutWidth, yInTable + layoutHeight),
+                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable),
+                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable + layoutHeight),
                 // down
-                new Point(xInTable + layoutWidth, yInTable + layoutHeight),
-                new Point(xInTable, yInTable + layoutHeight),
+                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable + layoutHeight),
+                new Point(table.getX() + xInTable, table.getY() + yInTable + layoutHeight),
                 // left
-                new Point(xInTable, yInTable + layoutHeight),
-                new Point(xInTable, yInTable),
+                new Point(table.getX() + xInTable, table.getY() + yInTable + layoutHeight),
+                new Point(table.getX() + xInTable, table.getY() + yInTable),
         };
         drawContext.getCanvas().drawLines(cellCoords, fill);
         if (belowCells != null) {

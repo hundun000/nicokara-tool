@@ -2,6 +2,7 @@ package com.github.dnbn.submerge.api.parser;
 
 import com.github.dnbn.submerge.api.parser.exception.InvalidAssSubException;
 import com.github.dnbn.submerge.api.subtitle.ass.*;
+import com.github.dnbn.submerge.api.subtitle.common.ComplexText;
 import com.github.dnbn.submerge.api.utils.ColorUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -12,6 +13,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Parse SSA/ASS subtitles
@@ -71,17 +73,17 @@ public class ASSParser extends BaseParser<ASSSub> {
      * @throws InvalidAssSubException
      * @throws IOException
      */
-    private static Set<Events> parseEvents(BufferedReader br) throws IOException, InvalidAssSubException {
+    private static Set<ASSEvents> parseEvents(BufferedReader br) throws IOException, InvalidAssSubException {
         String[] eventsFormat = findFormat(br, "events");
 
-        Set<Events> events = new TreeSet<>();
+        Set<ASSEvents> events = new TreeSet<>();
         String line = readFirstTextLine(br);
 
         while (line != null && !line.startsWith("[")) {
 
-            if (line.startsWith(Events.DIALOGUE) && !line.startsWith(COMMENTS_MARK)) {
-                String info = findInfo(line, Events.DIALOGUE);
-                String[] dialogLine = StringUtils.splitByWholeSeparatorPreserveAllTokens(info, Events.SEP);
+            if (line.startsWith(ASSEvents.DIALOGUE) && !line.startsWith(COMMENTS_MARK)) {
+                String info = findInfo(line, ASSEvents.DIALOGUE);
+                String[] dialogLine = StringUtils.splitByWholeSeparatorPreserveAllTokens(info, ASSEvents.SEP);
 
                 // The last field will always be the Text field, so that it can contain
                 // commas.
@@ -97,7 +99,7 @@ public class ASSParser extends BaseParser<ASSSub> {
                     StringBuilder joiner = new StringBuilder();
                     for (int i = lengthFormat - 1; i < lengthDialog; i++) {
                         joiner.append(dialogLine[i])
-                                .append(Events.SEP);
+                                .append(ASSEvents.SEP);
                     }
                     joiner.deleteCharAt(joiner.length() - 1);
                     dialogLine[lengthFormat - 1] = joiner.toString();
@@ -164,9 +166,9 @@ public class ASSParser extends BaseParser<ASSSub> {
      * @return the Events object
      * @throws InvalidAssSubException
      */
-    private static Events parseDialog(String[] eventsFormat, String[] dialogLine) throws InvalidAssSubException {
+    private static ASSEvents parseDialog(String[] eventsFormat, String[] dialogLine) throws InvalidAssSubException {
 
-        Events events = new Events();
+        ASSEvents events = new ASSEvents();
 
         for (int i = 0; i < eventsFormat.length; i++) {
             String property = StringUtils.uncapitalize(eventsFormat[i].trim());
@@ -181,11 +183,15 @@ public class ASSParser extends BaseParser<ASSSub> {
                         events.getTime().setEnd(ASSTime.fromString(value));
                         break;
                     case "text":
-                        List<String> textLines = Arrays.asList(value.split("\\\\N"));
-                        events.setTextLines(new ArrayList<>(textLines));
+                        List<String> textLines = Arrays.asList(value.split(ASSEvents.ESCAPED_RETURN_REGEX));
+                        events.setTextRawLines(
+                                textLines.stream()
+                                        .map(it -> ComplexText.fromText(it))
+                                        .collect(Collectors.toList())
+                        );
                         break;
                     default:
-                        String error = callProperty(Events.class, events, property, value);
+                        String error = callProperty(ASSEvents.class, events, property, value);
                         if (error != null) {
                             throw new InvalidAssSubException("Invalid property (" + property + ") " + value);
                         }

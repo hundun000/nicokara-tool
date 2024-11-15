@@ -1,7 +1,7 @@
 package com.github.dnbn.submerge.api.utils;
 
 import com.github.dnbn.submerge.api.subtitle.ass.ASSTime;
-import com.github.dnbn.submerge.api.subtitle.ass.Events;
+import com.github.dnbn.submerge.api.subtitle.ass.ASSEvents;
 import com.github.dnbn.submerge.api.subtitle.ass.V4Style;
 import com.github.dnbn.submerge.api.subtitle.common.TimedLine;
 import com.github.dnbn.submerge.api.subtitle.common.TimedObject;
@@ -28,7 +28,7 @@ public class ConvertionUtils {
 	 * @param style: the style name
 	 * @return the corresponding <code>Events</code>
 	 */
-	public static Events createEvent(TimedLine line, String style) {
+	public static ASSEvents createEvent(TimedLine line, String style) {
 
 		List<String> newLine = new ArrayList<>();
 
@@ -38,7 +38,7 @@ public class ConvertionUtils {
 		TimedObject timeLine = line.getTime();
 		ASSTime time = new ASSTime(timeLine.getStart(), timeLine.getEnd());
 
-		return new Events(style, time, newLine);
+		return new ASSEvents(style, time, newLine);
 	}
 
 	/**

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class MainService {
@@ -31,6 +32,11 @@ public class MainService {
             if (it.typeKanji()) {
                 MojiDictResponse response = mojiDictFeignClient.union_api(MojiDictRequest.quickBuild(it.getSurface()));
                 parsedTokensIndexToMojiHintMap.put(i, MojiDictResponse.findFirstSearchResultItem(response));
+                try {
+                    TimeUnit.MILLISECONDS.sleep(200);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return parsedTokensIndexToMojiHintMap;

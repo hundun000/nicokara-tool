@@ -11,11 +11,14 @@ import java.nio.channels.ByteChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Data
 public class Table {
 
+    int x;
+    int y;
     Cell dummyRootCell;
     int depthBound;
     int rightBound;
@@ -26,17 +29,28 @@ public class Table {
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 
-
-    public void draw(String outputFilePathName) {
+    public static void multiDraw(String outputFilePathName, List<Table> tableList) {
         Typeface face = Typeface.makeFromFile("data/Fonts/MiSans-Normal.ttf");
 
-        Surface surface = Surface.makeRasterN32Premul(this.getRightBound() + 5, this.depthBound + 5);
+        int surfaceWidth = tableList.stream()
+                .mapToInt(it -> it.getRightBound() + 5)
+                .max()
+                .orElse(1);
+        int surfaceHeight = tableList.stream()
+                .mapToInt(it -> it.depthBound)
+                .sum() + 5;
+        Surface surface = Surface.makeRasterN32Premul(surfaceWidth, surfaceHeight);
 
         Canvas canvas = surface.getCanvas();
 
         DrawContext drawContext = new DrawContext(canvas, face);
 
-        this.dummyRootCell.draw(drawContext);
+        int yOffset = 0;
+        for (var table : tableList) {
+            table.y = yOffset;
+            table.dummyRootCell.draw(drawContext);
+            yOffset += table.depthBound;
+        }
 
         Image image = surface.makeImageSnapshot();
         io.github.humbleui.skija.Data pngData = image.encodeToData(EncodedImageFormat.PNG);
@@ -54,5 +68,10 @@ public class Table {
         {
             e.printStackTrace();
         }
+    }
+
+
+    public void draw(String outputFilePathName) {
+        multiDraw(outputFilePathName, List.of(this));
     }
 }

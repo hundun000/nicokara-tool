@@ -19,6 +19,8 @@ import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
+import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
+import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +42,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     static IMojiHelper mojiHelper = new SimpleMojiHelper();
     static final Tokenizer tokenizer = new Tokenizer();
 
+    TagTokenizer tagTokenizer = new TagTokenizer();
     GoogleServiceImpl googleService = new GoogleServiceImpl();
 
     protected JapaneseService() {
@@ -47,6 +50,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
 
     /**
+     * 编程实现所需的更细分的token，例如"思","い"和"出"分别对应一个实例; "大切"对应一个实例;
      * type 1: kanji + furigana;
      * type 2: kana;
      */
@@ -57,16 +61,38 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         String kanji;
         String furigana;
         String kana;
+        String surface;
+        /**
+         * 既其所属的上一层的surface
+         */
         String source;
         
         public boolean typeKanji() {
             return kanji != null;
         }
+
+        public static JapaneseSubToken createTypeKanji(String kanji, String source) {
+            return JapaneseSubToken.builder()
+                    .kanji(kanji)
+                    .surface(kanji)
+                    .source(source)
+                    .build();
+        }
+
+        public static JapaneseSubToken createTypeKana(String kana, String surface, String source) {
+            return JapaneseSubToken.builder()
+                    .kana(kana)
+                    .surface(surface)
+                    .source(source)
+                    .build();
+        }
+
     }
     @AllArgsConstructor
     @Builder
     @Data
     public static class JapaneseLine {
+        List<TagToken> tagTokens;
         List<JapaneseParsedToken> parsedTokens;
         String chinese;
     }
@@ -96,22 +122,36 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
         @Override
         public String toLyricsLine(JapaneseLine japaneseLine) {
-            return japaneseLine.parsedTokens.stream()
-                    .flatMap(parsedToken -> parsedToken.getSubTokens().stream())
-                    .map(subToken -> {
-                        StringBuilder stringBuilder = new StringBuilder();
-                        if (subToken.typeKanji()) {
-                            stringBuilder.append(subToken.kanji);
+            StringBuilder result = new StringBuilder();
+            var tagTokenIterator = japaneseLine.getTagTokens().iterator();
+            var subTokenIterator = japaneseLine.getParsedTokens().stream()
+                    .flatMap(it -> it.getSubTokens().stream())
+                    .flatMap(it -> it.getSurface().chars().mapToObj(itt -> (char)itt))
+                    .iterator();
+            while (tagTokenIterator.hasNext()) {
+                TagToken tagToken = tagTokenIterator.next();
+                if (tagToken.getType() == TagTokenType.TEXT) {
+                    StringBuilder collectingText = new StringBuilder();
+                    while (!collectingText.toString().equals(tagToken.text)) {
+                        if (subTokenIterator.hasNext()) {
+                            collectingText.append(subTokenIterator.next());
                         } else {
-                            stringBuilder.append(subToken.kana);
+                            throw new RuntimeException("collectingText = " + collectingText + ", target = " + tagToken.text + ", not found.");
                         }
-                        return stringBuilder.toString();
-                    })
-                    .collect(Collectors.joining()) + "\n";
+                    }
+                    result.append(collectingText);
+                } else {
+                    result.append(tagToken.toLyricsTime());
+                }
+            }
+            return result.toString() + "\n";
         }
     }
 
 
+    /**
+     * 日语语法上的一个分词，例如"思い出"对应一个实例； "大切"对应一个实例;
+     */
     @AllArgsConstructor
     @Builder
     @Data
@@ -126,45 +166,35 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         }
     }
     
-    private static List<JapaneseSubToken> parseKanjiToken(Token token) {
+    private static List<JapaneseSubToken> parseSubTokens(Token token) {
         List<JapaneseSubToken> subTokens = new ArrayList<>();
         String surface = token.getSurface();
-        String rawPronunciation = token.getReading();
+        String rawPronunciation = token.isKnown() ? token.getReading() : token.getSurface();
 
         {
             JapaneseSubToken currentSubToken = null;
             for (int i = 0; i < surface.length(); i++) {
-                String c = String.valueOf(surface.charAt(i));
-                if (mojiHelper.hasKanji(c)) {
+                String surfaceChar = String.valueOf(surface.charAt(i));
+                if (mojiHelper.hasKanji(surfaceChar)) {
                     if (currentSubToken == null) {
-                        currentSubToken = JapaneseSubToken.builder()
-                                .kanji(c)
-                                .source(token.getSurface())
-                                .build();
+                        currentSubToken = JapaneseSubToken.createTypeKanji(surfaceChar, token.getSurface());
                     } else if (currentSubToken.typeKanji()) {
-                        currentSubToken.kanji += c;
+                        currentSubToken.kanji += surfaceChar;
+                        currentSubToken.surface += surfaceChar;
                     } else {
                         subTokens.add(currentSubToken);
-                        currentSubToken = JapaneseSubToken.builder()
-                                .kanji(c)
-                                .source(token.getSurface())
-                                .build();
+                        currentSubToken = JapaneseSubToken.createTypeKanji(surfaceChar, token.getSurface());
                     }
                 } else {
-                    String hiragana = mojiHelper.katakanaToHiragana(c);
+                    String hiragana = mojiHelper.katakanaToHiragana(surfaceChar);
                     if (currentSubToken == null) {
-                        currentSubToken = JapaneseSubToken.builder()
-                                .kana(hiragana)
-                                .source(token.getSurface())
-                                .build();
+                        currentSubToken = JapaneseSubToken.createTypeKana(hiragana, surfaceChar, token.getSurface());
                     } else if (currentSubToken.kana != null) {
                         currentSubToken.kana += hiragana;
+                        currentSubToken.surface += surfaceChar;
                     } else {
                         subTokens.add(currentSubToken);
-                        currentSubToken = JapaneseSubToken.builder()
-                                .kana(hiragana)
-                                .source(token.getSurface())
-                                .build();
+                        currentSubToken = JapaneseSubToken.createTypeKana(hiragana, surfaceChar, token.getSurface());
                     }
                 }
             }
@@ -202,14 +232,29 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     @Override
     protected List<JapaneseLine> toParsedLines(List<String> lines, @Nullable RootHint rootHint) {
         return lines.stream()
+                .filter(it -> !it.isEmpty())
                 .map(it -> {
-                    var result = toParsedLinesCore(it);
-                    try {
-                        result.setChinese(googleService.translateJaToZh(it));
-                    } catch (Exception e) {
-                        log.error("bad googleService.translateJaToZh: ", e);
-                        result.setChinese("Error: " + e.getMessage());
+                    List<TagToken> tagTokens = tagTokenizer.parse(it);
+                    String noTagText = tagTokens.stream()
+                            .filter(itt -> itt.getType() == TagTokenType.TEXT)
+                            .map(itt -> itt.getText())
+                            .collect(Collectors.joining());
+                    var result = toParsedNoTagLine(noTagText);
+                    result.setTagTokens(tagTokens);
+                    if (rootHint != null && rootHint.getTranslationCacheMap() != null) {
+                        result.setChinese(rootHint.getTranslationCacheMap().get(noTagText));
                     }
+                    if (result.getChinese() == null) {
+                        try {
+                            String googleServiceResult = googleService.translateJaToZh(noTagText);
+                            result.setChinese(googleServiceResult);
+                            log.info("googleService.translateJaToZh: {} -> {}", noTagText, googleServiceResult);
+                        } catch (Exception e) {
+                            log.error("bad googleService.translateJaToZh: ", e);
+                            result.setChinese("Error: " + e.getMessage());
+                        }
+                    }
+
                     return result;
                 })
                 .collect(Collectors.toList());
@@ -217,22 +262,12 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
 
 
-    public static JapaneseLine toParsedLinesCore(String line) {
+    public static JapaneseLine toParsedNoTagLine(String line) {
         List<Token> tokens = tokenizer.tokenize(line);
         List<JapaneseParsedToken> parsedTokens = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
             var token = tokens.get(i);
-            boolean hasKanji = mojiHelper.hasKanji(token.getSurface());
-            List<JapaneseSubToken> subTokens;
-            if (hasKanji) {
-                subTokens = parseKanjiToken(token);
-            } else {
-                subTokens = List.of(
-                        JapaneseSubToken.builder()
-                                .kana(token.getSurface())
-                                .build()
-                );
-            }
+            List<JapaneseSubToken> subTokens = parseSubTokens(token);
             var result = JapaneseParsedToken.builder()
                     .index(i)
                     .surface(token.getSurface())

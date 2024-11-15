@@ -1,6 +1,7 @@
 package hundun.nicokaratool.japanese;
 
 import hundun.nicokaratool.base.BaseService.ServiceResult;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,7 +15,7 @@ public class JapaneseRunner {
         System.out.println("Enter name: ");
         String name = br.readLine();
 
-        ServiceResult serviceResult = service.work(name);
+        ServiceResult<JapaneseLine> serviceResult = service.work(name);
 
         System.out.println("Ruby: ");
         System.out.println(serviceResult.getRuby());

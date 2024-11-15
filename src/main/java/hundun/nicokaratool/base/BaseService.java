@@ -30,7 +30,7 @@ public abstract class BaseService<T_PARSED_LINE> {
     protected abstract List<T_PARSED_LINE> toParsedLines(List<String> list, @Nullable RootHint rootHint);
     protected abstract Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<T_PARSED_LINE> lines);
 
-    public ServiceResult work(String name) throws IOException {
+    public ServiceResult<T_PARSED_LINE> work(String name) throws IOException {
 
         boolean needCreateRootHint = false;
 
@@ -44,8 +44,8 @@ public abstract class BaseService<T_PARSED_LINE> {
             rootHint = null;
         }
 
-        List<T_PARSED_LINE> myTokens = toParsedLines(lines, rootHint);
-        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(myTokens);
+        List<T_PARSED_LINE> parsedLines = toParsedLines(lines, rootHint);
+        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(parsedLines);
 
         if (needCreateRootHint) {
             List<KanjiHintPO> kanjiHintPOS = packageMap.values().stream()
@@ -76,11 +76,12 @@ public abstract class BaseService<T_PARSED_LINE> {
         String ruby = String.join("\n", rubyList);
 
 
-        String kanji = myTokens.stream()
+        String lyricsText = parsedLines.stream()
                 .map(it -> lyricsRender.toLyricsLine(it))
                 .collect(Collectors.joining("\n"));
-        return ServiceResult.builder()
-                .kanji(kanji)
+        return ServiceResult.<T_PARSED_LINE>builder()
+                .lines(parsedLines)
+                .lyricsText(lyricsText)
                 .ruby(ruby)
                 .build();
     }
@@ -155,8 +156,9 @@ public abstract class BaseService<T_PARSED_LINE> {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
-    public static class ServiceResult {
-        String kanji;
+    public static class ServiceResult<T_PARSED_LINE> {
+        List<T_PARSED_LINE> lines;
+        String lyricsText;
         String ruby;
     }
 

@@ -71,7 +71,7 @@ public class ASSSub implements TimedTextFile {
 	 * Events for the script - all the subtitles, comments, pictures, sounds, movies and
 	 * commands
 	 */
-	private Set<Events> events = new TreeSet<>();
+	private Set<ASSEvents> events = new TreeSet<>();
 
 	@Override
 	public String toString() {
@@ -89,7 +89,7 @@ public class ASSSub implements TimedTextFile {
 
 		// [Events]
 		sb.append(EVENTS).append(NEW_LINE);
-		sb.append(FORMAT).append(SEP).append(Events.FORMAT_STRING).append(NEW_LINE);
+		sb.append(FORMAT).append(SEP).append(ASSEvents.FORMAT_STRING).append(NEW_LINE);
 		this.events.forEach(e -> sb.append(e.toString()).append(NEW_LINE));
 
 		return sb.toString();
@@ -122,11 +122,11 @@ public class ASSSub implements TimedTextFile {
 		this.style = style;
 	}
 
-	public Set<Events> getEvents() {
+	public Set<ASSEvents> getEvents() {
 		return this.events;
 	}
 
-	public void setEvents(Set<Events> events) {
+	public void setEvents(Set<ASSEvents> events) {
 		this.events = events;
 	}
 

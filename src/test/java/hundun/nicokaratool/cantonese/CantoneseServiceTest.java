@@ -1,7 +1,8 @@
 package hundun.nicokaratool.cantonese;
 
 import hundun.nicokaratool.base.BaseService.ServiceResult;
-import hundun.nicokaratool.japanese.JapaneseService;
+import hundun.nicokaratool.base.lyrics.LyricLine;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,10 +15,10 @@ public class CantoneseServiceTest {
     public void test() throws IOException {
         String name = "example-cantonese";
 
-        ServiceResult serviceResult = service.work(name);
+        ServiceResult<LyricLine> serviceResult = service.work(name);
 
         System.out.println("Result: ");
-        System.out.println(serviceResult.getKanji());
+        System.out.println(serviceResult.getLyricsText());
         System.out.println("\n");
         System.out.println(serviceResult.getRuby());
     }

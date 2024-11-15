@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Class <SRTLine> represents an abstract line of SRT, meaning text, timecodes and index
  */
-public class SRTLine extends SubtitleLine<SRTTime> {
+public class SRTLine extends SubtitleLine<SRTTime, String> {
 
     private static final long serialVersionUID = -1220593401999895814L;
 
@@ -19,7 +19,7 @@ public class SRTLine extends SubtitleLine<SRTTime> {
 
         this.id = id;
         this.time = time;
-        this.textLines = textLines;
+        this.textRawLines = textLines;
     }
 
     @Override
@@ -28,7 +28,7 @@ public class SRTLine extends SubtitleLine<SRTTime> {
         StringBuilder sb = new StringBuilder();
         sb.append(this.id).append(NEW_LINE);
         sb.append(this.time).append(NEW_LINE);
-        for (String textLine : textLines) {
+        for (String textLine : textRawLines) {
             sb.append(textLine).append(NEW_LINE);
         }
         return sb.append(NEW_LINE).toString();
@@ -42,5 +42,10 @@ public class SRTLine extends SubtitleLine<SRTTime> {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    @Override
+    public List<String> getTextLines() {
+        return getTextRawLines();
     }
 }

@@ -17,7 +17,7 @@ public class CantoneseRunner {
         ServiceResult serviceResult = service.work(name);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/" + name +".out.txt", false))){
-            writer.write(serviceResult.getKanji());
+            writer.write(serviceResult.getLyricsText());
             writer.write("\n\n\n");
             writer.write(serviceResult.getRuby());
         }

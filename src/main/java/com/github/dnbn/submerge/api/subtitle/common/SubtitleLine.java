@@ -1,10 +1,15 @@
 package com.github.dnbn.submerge.api.subtitle.common;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class SubtitleLine<T extends TimedObject> implements TimedLine {
+@Getter
+@Setter
+public abstract class SubtitleLine<T extends TimedObject, T_TEXT> implements TimedLine {
 
     /**
      * Serial Id
@@ -15,7 +20,7 @@ public class SubtitleLine<T extends TimedObject> implements TimedLine {
      * Subtitle Text. This is the actual text which will be displayed as a subtitle
      * onscreen.
      */
-    protected List<String> textLines = new ArrayList<>();
+    protected List<T_TEXT> textRawLines = new ArrayList<>();
 
     /**
      * Timecodes
@@ -77,7 +82,7 @@ public class SubtitleLine<T extends TimedObject> implements TimedLine {
         int compare = this.time.compareTo(o.getTime());
         if (compare == 0) {
             StringBuilder stringBuilder = new StringBuilder();
-            for (String textLine : textLines) {
+            for (T_TEXT textLine : textRawLines) {
                 stringBuilder.append(textLine)
                         .append(",");
             }
@@ -94,26 +99,6 @@ public class SubtitleLine<T extends TimedObject> implements TimedLine {
         }
 
         return compare;
-    }
-
-    // ===================== getter and setter start =====================
-
-    @Override
-    public T getTime() {
-        return this.time;
-    }
-
-    public void setTime(T time) {
-        this.time = time;
-    }
-
-    @Override
-    public List<String> getTextLines() {
-        return this.textLines;
-    }
-
-    public void setTextLines(List<String> textLines) {
-        this.textLines = textLines;
     }
 
 }

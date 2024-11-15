@@ -1,9 +1,13 @@
 package com.github.dnbn.submerge.api.subtitle.ass;
 
+import com.github.dnbn.submerge.api.subtitle.common.ComplexText;
 import com.github.dnbn.submerge.api.subtitle.common.SubtitleLine;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Contain the subtitle text, their timings, and how it should be displayed. The fields
@@ -20,7 +24,9 @@ import java.util.List;
  * versions of the software to read the fields it recognises - even if the field order is
  * changed.
  */
-public class Events extends SubtitleLine<ASSTime> {
+@Setter
+@Getter
+public class ASSEvents extends SubtitleLine<ASSTime, ComplexText> {
 
     /**
      * Serial
@@ -35,8 +41,8 @@ public class Events extends SubtitleLine<ASSTime> {
     /**
      * New line separator
      */
-    private static final String ESCAPED_RETURN = "\\N";
-
+    public static final String ESCAPED_RETURN = "\\N";
+    public static final String ESCAPED_RETURN_REGEX = "\\\\N";
     /**
      * Dialog
      */
@@ -111,16 +117,16 @@ public class Events extends SubtitleLine<ASSTime> {
      * @param time      Start Time of the Event
      * @param textLines End Time of the Event
      */
-    public Events(String style, ASSTime time, List<String> textLines) {
+    public ASSEvents(String style, ASSTime time, List<String> textLines) {
         this.style = style;
         this.time = time;
-        this.textLines = textLines;
+        this.textRawLines = textLines.stream().map(it -> ComplexText.fromText(it)).collect(Collectors.toList());
     }
 
     /**
      * Constructor
      */
-    public Events() {
+    public ASSEvents() {
         super();
         this.style = StringUtils.EMPTY;
         this.time = new ASSTime();
@@ -140,68 +146,16 @@ public class Events extends SubtitleLine<ASSTime> {
         sb.append(this.marginR).append(SEP);
         sb.append(this.marginV).append(SEP);
         sb.append(this.effect).append(SEP);
-        for (String tl : textLines) {
+        for (ComplexText tl : textRawLines) {
             sb.append(tl).append(ESCAPED_RETURN);
         }
 
         return StringUtils.removeEnd(sb.toString(), ESCAPED_RETURN);
     }
 
-    // ===================== getter and setter start =====================
 
-    public int getLayer() {
-        return this.layer;
-    }
-
-    public void setLayer(int layer) {
-        this.layer = layer;
-    }
-
-    public String getStyle() {
-        return this.style;
-    }
-
-    public void setStyle(String style) {
-        this.style = style;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getMarginL() {
-        return this.marginL;
-    }
-
-    public void setMarginL(String marginL) {
-        this.marginL = marginL;
-    }
-
-    public String getMarginR() {
-        return this.marginR;
-    }
-
-    public void setMarginR(String marginR) {
-        this.marginR = marginR;
-    }
-
-    public String getMarginV() {
-        return this.marginV;
-    }
-
-    public void setMarginV(String marginV) {
-        this.marginV = marginV;
-    }
-
-    public String getEffect() {
-        return this.effect;
-    }
-
-    public void setEffect(String effect) {
-        this.effect = effect;
+    @Override
+    public List<String> getTextLines() {
+        return getTextRawLines().stream().map(it -> it.toString()).collect(Collectors.toList());
     }
 }
