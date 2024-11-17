@@ -1,6 +1,5 @@
 package hundun.nicokaratool.layout;
 
-import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Cell.DrawContext;
 import io.github.humbleui.skija.*;
 import lombok.Data;
@@ -29,16 +28,16 @@ public class Table {
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();
 
-    public static void multiDraw(String outputFilePathName, List<Table> tableList) {
+    public static void multiDraw(String outputFilePathName, List<Table> tableList, int space) {
         Typeface face = Typeface.makeFromFile("data/Fonts/MiSans-Normal.ttf");
 
         int surfaceWidth = tableList.stream()
-                .mapToInt(it -> it.getRightBound() + 5)
+                .mapToInt(it -> it.getRightBound() + space)
                 .max()
                 .orElse(1);
         int surfaceHeight = tableList.stream()
-                .mapToInt(it -> it.depthBound)
-                .sum() + 5;
+                .mapToInt(it -> it.depthBound + space)
+                .sum();
         Surface surface = Surface.makeRasterN32Premul(surfaceWidth, surfaceHeight);
 
         Canvas canvas = surface.getCanvas();
@@ -49,7 +48,7 @@ public class Table {
         for (var table : tableList) {
             table.y = yOffset;
             table.dummyRootCell.draw(drawContext);
-            yOffset += table.depthBound;
+            yOffset += (table.depthBound + space);
         }
 
         Image image = surface.makeImageSnapshot();
@@ -72,6 +71,6 @@ public class Table {
 
 
     public void draw(String outputFilePathName) {
-        multiDraw(outputFilePathName, List.of(this));
+        multiDraw(outputFilePathName, List.of(this), 5);
     }
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.NicokaraLyricsRender;
-import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import org.junit.Test;
@@ -23,13 +22,13 @@ public class JapaneseServiceTest {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
     static JapaneseService japaneseService = new JapaneseService();
-    MainService mainService = new MainService();
+    MojiService mojiService = new MojiService();
 
     @Test
     public void testAll() throws IOException {
         String name = "example-japanese";
 
-        ServiceResult<JapaneseLine> serviceResult = japaneseService.work(name);
+        ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
 
         System.out.println("Lines: ");
         System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
@@ -37,22 +36,8 @@ public class JapaneseServiceTest {
         System.out.println(serviceResult.getRuby());
         System.out.println("LyricsText: ");
         System.out.println(serviceResult.getLyricsText());
-        int space = 5;
-        Table.multiDraw(
-                TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_all_output.png",
-                serviceResult.getLines().stream()
-                        .map(line -> {
-                            JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
-                                    .parsedTokensIndexToMojiHintMap(mainService.getMojiHintMap(line))
-                                    .build();
-                            TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
-                            tableBuilder.setXPreferredSpace(space);
-                            tableBuilder.setYPreferredSpace(space);
-                            Table table = tableBuilder.build();
-                            return table;
-                        })
-                        .collect(Collectors.toList())
-        );
+
+        japaneseService.workStep2(serviceResult, name);
     }
 
 
@@ -65,7 +50,7 @@ public class JapaneseServiceTest {
         String text = "大切な思い出を";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
         JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
-                .parsedTokensIndexToMojiHintMap(mainService.getMojiHintMap(line))
+                .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
                 .build();
         TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
         tableBuilder.setXPreferredSpace(space);

@@ -14,7 +14,7 @@ public class CantoneseRunner {
         System.out.println("Enter name: ");
         String name = br.readLine();
 
-        ServiceResult serviceResult = service.work(name);
+        ServiceResult serviceResult = service.workStep1(name);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("data/" + name +".out.txt", false))){
             writer.write(serviceResult.getLyricsText());

@@ -3,7 +3,7 @@ package hundun.nicokaratool.layout;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
-import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
+import hundun.nicokaratool.japanese.JapaneseExtraHint;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class TableBuilder {
         current = CellBuilder.builder()
                 .rawText(
                         Optional.ofNullable(japaneseExtraHint.getParsedTokensIndexToMojiHintMap().get(parsedToken.getIndex()))
-                                .map(it -> it.getExcerpt())
+                                .map(it -> it.getZhText())
                                 .orElse("")
                 )
                 .fontSize(20)
@@ -131,7 +131,7 @@ public class TableBuilder {
                     .fontSize(0)
                     .build();
             CellBuilder downCell = CellBuilder.builder()
-                    .rawText(subToken.getKana())
+                    .rawText(subToken.getSurface())
                     .fontSize(KANJI_FONT_SIZE)
                     .build();
             upCell.setBelowCells(List.of(downCell));

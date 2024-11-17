@@ -3,6 +3,7 @@ package hundun.nicokaratool.remote;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import feign.Headers;
 import feign.RequestLine;
+import hundun.nicokaratool.japanese.JapaneseExtraHint.TranslationResultItem;
 import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictRequest.Function.Params;
 import hundun.nicokaratool.util.FeignClientFactory;
 import lombok.AllArgsConstructor;
@@ -106,6 +107,15 @@ public interface MojiDictFeignClient {
             List<SearchResultItem> searchResult;
         }
 
+        /**
+         * {
+         *               "targetId" : "198970381",
+         *               "targetType" : 102,
+         *               "title" : "食べる | たべる ②",
+         *               "excerpt" : "[他动·一段] 吃；生活",
+         *               "excerptB" : "[他动·二类] 吃；生活"
+         *             }
+         */
         @Data
         public static class SearchResultItem {
             String targetId;

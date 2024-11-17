@@ -3,18 +3,11 @@ package hundun.nicokaratool;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
-import hundun.nicokaratool.japanese.MainService;
-import hundun.nicokaratool.japanese.MainService.JapaneseExtraHint;
 import hundun.nicokaratool.layout.Align;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import hundun.nicokaratool.layout.TableBuilder.CellBuilder;
 import org.junit.Test;
-
-import java.util.*;
 
 public class TableTest {
 

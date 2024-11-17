@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public abstract class BaseService<T_PARSED_LINE> {
+    public static final String CACHE_FOLDER = "data/caches/";
+    public static final String RUNTIME_INPUT_FOLDER = "runtime-input/";
     protected ObjectMapper normalObjectMapper = new ObjectMapper();
     protected ObjectMapper fileObjectMapper = new ObjectMapper();
     ILyricsRender<T_PARSED_LINE> lyricsRender;
@@ -30,13 +32,13 @@ public abstract class BaseService<T_PARSED_LINE> {
     protected abstract List<T_PARSED_LINE> toParsedLines(List<String> list, @Nullable RootHint rootHint);
     protected abstract Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<T_PARSED_LINE> lines);
 
-    public ServiceResult<T_PARSED_LINE> work(String name) throws IOException {
+    public ServiceResult<T_PARSED_LINE> workStep1(String name) throws IOException {
 
         boolean needCreateRootHint = false;
 
-        List<String> lines = Utils.readAllLines("data/" + name + ".txt");
+        List<String> lines = Utils.readAllLines(RUNTIME_INPUT_FOLDER + name + ".txt");
         RootHint rootHint;
-        File rootHintFile = new File("data/" + name + ".rootHint.json");
+        File rootHintFile = new File(RUNTIME_INPUT_FOLDER + name + ".rootHint.json");
         if (rootHintFile.exists()) {
             rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
         } else {

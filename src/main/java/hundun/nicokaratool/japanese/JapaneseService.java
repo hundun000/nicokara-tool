@@ -21,10 +21,13 @@ import com.atilika.kuromoji.ipadic.Tokenizer;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
+import hundun.nicokaratool.layout.Table;
+import hundun.nicokaratool.layout.TableBuilder;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,20 +37,32 @@ import org.jetbrains.annotations.Nullable;
  */
 @Slf4j
 public class JapaneseService extends BaseService<JapaneseLine> {
-
+    public static final String RUNTIME_OUTPUT_FOLDER = "runtime-output/";
     public static ObjectMapper objectMapper = new ObjectMapper();
     static {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
-    static IMojiHelper mojiHelper = new SimpleMojiHelper();
-    static final Tokenizer tokenizer = new Tokenizer();
+    IMojiHelper mojiHelper = new SimpleMojiHelper();
+    final Tokenizer tokenizer = new Tokenizer();
 
+    public MojiService mojiService = new MojiService();
     TagTokenizer tagTokenizer = new TagTokenizer();
     GoogleServiceImpl googleService = new GoogleServiceImpl();
 
     protected JapaneseService() {
         super(NicokaraLyricsRender.INSTANCE);
+        mojiService.loadCache();
     }
+
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class WorkArgPackage {
+        boolean withTranslation;
+    }
+
+    WorkArgPackage argPackage = new WorkArgPackage();
 
     /**
      * 编程实现所需的更细分的token，例如"思","い"和"出"分别对应一个实例; "大切"对应一个实例;
@@ -166,7 +181,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         }
     }
     
-    private static List<JapaneseSubToken> parseSubTokens(Token token) {
+    private List<JapaneseSubToken> parseSubTokens(Token token) {
         List<JapaneseSubToken> subTokens = new ArrayList<>();
         String surface = token.getSurface();
         String rawPronunciation = token.isKnown() ? token.getReading() : token.getSurface();
@@ -241,18 +256,23 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                             .collect(Collectors.joining());
                     var result = toParsedNoTagLine(noTagText);
                     result.setTagTokens(tagTokens);
-                    if (rootHint != null && rootHint.getTranslationCacheMap() != null) {
-                        result.setChinese(rootHint.getTranslationCacheMap().get(noTagText));
-                    }
-                    if (result.getChinese() == null) {
-                        try {
-                            String googleServiceResult = googleService.translateJaToZh(noTagText);
-                            result.setChinese(googleServiceResult);
-                            log.info("googleService.translateJaToZh: {} -> {}", noTagText, googleServiceResult);
-                        } catch (Exception e) {
-                            log.error("bad googleService.translateJaToZh: ", e);
-                            result.setChinese("Error: " + e.getMessage());
+
+                    if (argPackage.isWithTranslation()) {
+                        if (rootHint != null && rootHint.getTranslationCacheMap() != null) {
+                            result.setChinese(rootHint.getTranslationCacheMap().get(noTagText));
                         }
+                        if (result.getChinese() == null) {
+                            try {
+                                String googleServiceResult = googleService.translateJaToZh(noTagText);
+                                result.setChinese(googleServiceResult);
+                                log.info("googleService.translateJaToZh: {} -> {}", noTagText, googleServiceResult);
+                            } catch (Exception e) {
+                                log.error("bad googleService.translateJaToZh: ", e);
+                                result.setChinese("Error: " + e.getMessage());
+                            }
+                        }
+                    } else {
+                        result.setChinese("");
                     }
 
                     return result;
@@ -262,7 +282,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
 
 
-    public static JapaneseLine toParsedNoTagLine(String line) {
+    public JapaneseLine toParsedNoTagLine(String line) {
         List<Token> tokens = tokenizer.tokenize(line);
         List<JapaneseParsedToken> parsedTokens = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i++) {
@@ -315,5 +335,23 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         );
     }
 
-
+    public void workStep2(ServiceResult<JapaneseLine> serviceResult, String name) {
+        int space = 5;
+        Table.multiDraw(
+                RUNTIME_OUTPUT_FOLDER + name + "_all_output.png",
+                serviceResult.getLines().stream()
+                        .map(line -> {
+                            JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
+                                    .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
+                                    .build();
+                            TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
+                            tableBuilder.setXPreferredSpace(space);
+                            tableBuilder.setYPreferredSpace(space);
+                            Table table = tableBuilder.build();
+                            return table;
+                        })
+                        .collect(Collectors.toList()),
+                space
+        );
+    }
 }
