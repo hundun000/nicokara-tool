@@ -1,5 +1,6 @@
 package hundun.nicokaratool.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.File;
@@ -9,14 +10,23 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
+@Slf4j
 public class Utils {
 
     public static List<String> readAllLines(String path) {
         try {
             return Files.readAllLines(Paths.get(path), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("bad readAllLines: ", e);
             throw new RuntimeException();
+        }
+    }
+
+    public static void writeAllLines(String path, String lines) {
+        try {
+            Files.writeString(Paths.get(path), lines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("bad readAllLines: ", e);
         }
     }
 }

@@ -2,24 +2,56 @@
 
 由程序为歌词生成注音（含NLP判断多音字的读音），并以NicokaraMaker的格式（@Ruby）输出。
 
-#### next WIP
+<details open>
+    <summary>输入</summary>
+    <div style="border: 1px solid black">
+        [00:22:90]大切な[00:24:03]思い[00:24:94]出を[00:25:51]<br>
+        [00:25:86]ギュっと[00:26:36]抱いて[00:27:10]進もう[00:27:95]<br>
+        [00:28:25]「ありがとう」も[00:29:73]「大好き」も[00:30:92]<br>
+        まだまだ言い足りないでしょ<br>
+        ……<br>
+    </div>
+</details>
 
-由程序为歌词生成日语语法分析和整句翻译等，输出为图片/视频。
+支持输入含或不含timetag。
 
-![image](./doc/1.png)
+<details open>
+    <summary>输出</summary>
+    <div style="border: 1px solid black">
+        @Ruby1=言,い<br>
+        @Ruby2=一,ひと<br>
+        @Ruby3=場所,ばしょ<br>
+        @Ruby4=歩,ほ<br>
+        @Ruby5=大切,たいせつ<br>
+        ……<br>
+    </div>
+</details>
 
-单词释义：Moji api  
-整句翻译：Google翻译
+### WIP
 
-#### 1. 为日语汉字注音假名
+#### 输入输出歌词的格式
 
-由[kuromoji](https://github.com/atilika/kuromoji)提供日语NLP。
+尝试同时支持NicokaraMaker格式和Aegisub格式(`.ass`)。
 
-#### 2. 为繁体字注音粤拼/耶鲁拼音
+#### 歌词分析
 
-由[pycantonese-server](https://github.com/hundun000/pycantonese-server)提供粤语NLP。
+进一步进行分析（单词词性，单词释义，整句翻译等），输出为图片。
 
-### 日语使用例
+<details open>
+    <summary>输出</summary>
+    <img src="./doc/1.png" alt="">
+</details>
+
+已知问题：单词拆分和注音有小概率不正确；单词释义未联系上下文，有较大概率不正确；Google翻译未联系上下文，较生硬；
+
+#### 依赖
+
+- 单词拆分和注音：[kuromoji](https://github.com/atilika/kuromoji)  
+- 单词释义：Moji api  
+- 整句翻译：Google翻译
+- 输出格式用途：[NicokaraMaker2](https://shinta.coresv.com/old-logs/nicokaramaker2-jpn/)
+
+### 日语使用例 （已过时）
 
 在`data/example-japanese.txt`放入歌词文本。仅支持无时间戳的形式。
 
@@ -108,7 +140,11 @@
 ...
 ```
 
-### 粤语使用例
+### 其他WIP功能
+
+#### 为粤语歌词注音
+
+由[pycantonese-server](https://github.com/hundun000/pycantonese-server)提供粤语NLP。
 
 在`data/example-cantonese.txt`放入歌词文本。支持行首行尾时间戳的形式。
 

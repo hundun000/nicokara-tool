@@ -3,7 +3,7 @@ package hundun.nicokaratool.remote;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import feign.Headers;
 import feign.RequestLine;
-import hundun.nicokaratool.japanese.JapaneseExtraHint.TranslationResultItem;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictRequest.Function.Params;
 import hundun.nicokaratool.util.FeignClientFactory;
 import lombok.AllArgsConstructor;
@@ -14,6 +14,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public interface MojiDictFeignClient {
 
@@ -88,20 +90,24 @@ public interface MojiDictFeignClient {
 
 
         }
+
         @Data
         public static class Result2 {
             @JsonProperty("search-all")
             SearchAll searchAll;
         }
+
         @Data
         public static class SearchAll {
             int code;
             Result3 result;
         }
+
         @Data
         public static class Result3 {
             Word word;
         }
+
         @Data
         public static class Word {
             List<SearchResultItem> searchResult;
@@ -109,12 +115,12 @@ public interface MojiDictFeignClient {
 
         /**
          * {
-         *               "targetId" : "198970381",
-         *               "targetType" : 102,
-         *               "title" : "食べる | たべる ②",
-         *               "excerpt" : "[他动·一段] 吃；生活",
-         *               "excerptB" : "[他动·二类] 吃；生活"
-         *             }
+         * "targetId" : "198970381",
+         * "targetType" : 102,
+         * "title" : "食べる | たべる ②",
+         * "excerpt" : "[他动·一段] 吃；生活",
+         * "excerptB" : "[他动·二类] 吃；生活"
+         * }
          */
         @Data
         public static class SearchResultItem {
@@ -123,19 +129,6 @@ public interface MojiDictFeignClient {
             String title;
             String excerpt;
             String excerptB;
-        }
-
-        @Nullable
-        public static SearchResultItem findFirstSearchResultItem(@Nullable MojiDictResponse response) {
-            return Optional.ofNullable(response)
-                    .map(it -> it.getResult())
-                    .map(it -> it.getResults())
-                    .map(it -> it.getSearchAll())
-                    .map(it -> it.getResult())
-                    .map(it -> it.getWord())
-                    .map(it -> it.getSearchResult())
-                    .flatMap(it -> it.stream().findFirst())
-                    .orElse(null);
         }
     }
 }

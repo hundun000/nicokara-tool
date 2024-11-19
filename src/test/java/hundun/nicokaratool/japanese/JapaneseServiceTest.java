@@ -28,14 +28,11 @@ public class JapaneseServiceTest {
     public void testAll() throws IOException {
         String name = "example-japanese";
 
+        japaneseService.argPackage.outputImage = true;
         ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
 
         System.out.println("Lines: ");
         System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
-        System.out.println("Ruby: ");
-        System.out.println(serviceResult.getRuby());
-        System.out.println("LyricsText: ");
-        System.out.println(serviceResult.getLyricsText());
 
         japaneseService.workStep2(serviceResult, name);
     }
@@ -43,10 +40,7 @@ public class JapaneseServiceTest {
 
     @Test
     public void testTable3() throws JsonProcessingException {
-        testTableCore(5);
-    }
-
-    private void testTableCore(int space) throws JsonProcessingException {
+        int space = 5;
         String text = "大切な思い出を";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
         JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
@@ -57,7 +51,7 @@ public class JapaneseServiceTest {
         tableBuilder.setYPreferredSpace(space);
         Table table = tableBuilder.build();
         System.out.println(objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER +this.getClass().getSimpleName() + "_space" + space + "_output.png");
+        table.draw(TEST_OUTPUT_FOLDER + this.getClass().getSimpleName() + "_" + text + "_output.png");
     }
 
     @Test

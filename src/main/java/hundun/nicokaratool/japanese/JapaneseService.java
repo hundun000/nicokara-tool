@@ -24,6 +24,7 @@ import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
+import hundun.nicokaratool.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,7 +38,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @Slf4j
 public class JapaneseService extends BaseService<JapaneseLine> {
-    public static final String RUNTIME_OUTPUT_FOLDER = "runtime-output/";
     public static ObjectMapper objectMapper = new ObjectMapper();
     static {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -60,9 +60,18 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     @Data
     public static class WorkArgPackage {
         boolean withTranslation;
+        boolean outputImage;
+        boolean outputNicokara;
+
+        public static WorkArgPackage getDefault() {
+            return WorkArgPackage.builder()
+                    .withTranslation(true)
+                    .outputNicokara(true)
+                    .build();
+        }
     }
 
-    WorkArgPackage argPackage = new WorkArgPackage();
+    WorkArgPackage argPackage = WorkArgPackage.getDefault();
 
     /**
      * 编程实现所需的更细分的token，例如"思","い"和"出"分别对应一个实例; "大切"对应一个实例;
@@ -336,22 +345,28 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
 
     public void workStep2(ServiceResult<JapaneseLine> serviceResult, String name) {
-        int space = 5;
-        Table.multiDraw(
-                RUNTIME_OUTPUT_FOLDER + name + "_all_output.png",
-                serviceResult.getLines().stream()
-                        .map(line -> {
-                            JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
-                                    .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
-                                    .build();
-                            TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
-                            tableBuilder.setXPreferredSpace(space);
-                            tableBuilder.setYPreferredSpace(space);
-                            Table table = tableBuilder.build();
-                            return table;
-                        })
-                        .collect(Collectors.toList()),
-                space
-        );
+        if (argPackage.outputImage) {
+            int space = 5;
+            Table.multiDraw(
+                    RUNTIME_IO_FOLDER + name + "_all_output.png",
+                    serviceResult.getLines().stream()
+                            .map(line -> {
+                                JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
+                                        .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
+                                        .build();
+                                TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
+                                tableBuilder.setXPreferredSpace(space);
+                                tableBuilder.setYPreferredSpace(space);
+                                Table table = tableBuilder.build();
+                                return table;
+                            })
+                            .collect(Collectors.toList()),
+                    space
+            );
+        }
+        if (argPackage.outputNicokara) {
+            String kraFileText = serviceResult.getLyricsText() + "\n" + serviceResult.getRuby();
+            Utils.writeAllLines(RUNTIME_IO_FOLDER + name + ".kra", kraFileText);
+        }
     }
 }

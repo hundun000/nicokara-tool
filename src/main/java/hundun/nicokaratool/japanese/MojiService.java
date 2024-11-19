@@ -12,11 +12,14 @@ import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictResponse;
 import hundun.nicokaratool.remote.MojiDictFeignClient.MojiDictResponse.SearchResultItem;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class MojiService {
@@ -46,6 +49,11 @@ public class MojiService {
         }
     }
 
+    Map<String, Set<String>> wordTypeMapping = Map.of(
+            "動詞", Set.of("动", "自动", "他动"),
+            "名詞", Set.of("名")
+            );
+
     private boolean needTranslate(JapaneseParsedToken token) {
         if (token.getPartOfSpeechLevel1() == null) {
             return false;
@@ -56,7 +64,7 @@ public class MojiService {
         switch (token.getPartOfSpeechLevel1()) {
             case "副詞":
             case "動詞":
-            case "助動詞":
+            case "感動詞":
             case "名詞":
             case "連体詞":
                 return true;
@@ -65,21 +73,23 @@ public class MojiService {
         }
     }
 
-    private TranslationResultItem postHandleToTranslationResult(JapaneseParsedToken token, SearchResultItem searchResultItem) {
+    private TranslationResultItem postHandleToTranslationResult(String search, SearchResultItem searchResultItem) {
         int excerptCutLength = 30;
         return Optional.ofNullable(searchResultItem)
                 .map(itt -> TranslationResultItem.builder()
-                        .jaText(token.getSurface())
+                        .jaText(search)
                         .zhText(
                                 Optional.of(itt.getTitle())
                                         .map(it -> {
-                                            boolean match = Arrays.asList(itt.getTitle().split("\\|")).stream()
+                                            it = it.replace("①", "").replace("②", "");
+                                            var parts = it.split("\\|");
+                                            boolean match = Arrays.asList(parts).stream()
                                                     .map(part -> part.trim())
-                                                    .anyMatch(part -> part.equals(token.getSurface()));
+                                                    .anyMatch(part -> part.equals(search));
                                             if (match) {
                                                 return "";
                                             } else {
-                                                return itt.getTitle() + "：";
+                                                return parts[0] + "：";
                                             }
                                         })
                                         .get()
@@ -106,14 +116,15 @@ public class MojiService {
             var it = line.getParsedTokens().get(i);
             if (needTranslate(it)) {
                 MojiDictResponse response;
-                if (!cache.mojiDictResponseCacheMap.containsKey(it.getSurface())) {
-                    log.info("moji api for: {}", it.getSurface());
-                    response = mojiDictFeignClient.union_api(MojiDictRequest.quickBuild(it.getSurface()));
+                String search = it.getSurface();
+                if (!cache.mojiDictResponseCacheMap.containsKey(search)) {
+                    log.info("moji api for: {}", search);
+                    response = mojiDictFeignClient.union_api(MojiDictRequest.quickBuild(search));
                 } else {
-                    response = cache.mojiDictResponseCacheMap.get(it.getSurface());
+                    response = cache.mojiDictResponseCacheMap.get(search);
                 }
-                SearchResultItem searchResultItem = MojiDictResponse.findFirstSearchResultItem(response);
-                TranslationResultItem translationResultItem = postHandleToTranslationResult(it, searchResultItem);
+                SearchResultItem searchResultItem = findFirstSearchResultItem(it, response);
+                TranslationResultItem translationResultItem = postHandleToTranslationResult(search, searchResultItem);
                 cache.mojiDictResponseCacheMap.put(it.getSurface(), response);
                 parsedTokensIndexToMojiHintMap.put(i, translationResultItem);
                 cacheDirty = true;
@@ -135,5 +146,38 @@ public class MojiService {
         return parsedTokensIndexToMojiHintMap;
     }
 
+    @Nullable
+    public SearchResultItem findFirstSearchResultItem(JapaneseParsedToken search, @Nullable MojiDictResponse response) {
+        Pattern pattern = Pattern.compile("^\\[(.*?)]");
+        return Optional.ofNullable(response)
+                .map(it -> it.getResult())
+                .map(it -> it.getResults())
+                .map(it -> it.getSearchAll())
+                .map(it -> it.getResult())
+                .map(it -> it.getWord())
+                .map(it -> it.getSearchResult())
+                .flatMap(it -> it.stream()
+/*                        .filter(itt -> {
+                            // 试图比较search的词性和搜索结果的词性是否匹配
+                            if (!wordTypeMapping.containsKey(search.getPartOfSpeechLevel1())) {
+                                return true;
+                            } else {
+                                Matcher matcher = pattern.matcher(itt.getExcerpt());
+                                if (matcher.find()) {
+                                    var parts = matcher.group(1).split("\\|");
+                                    boolean match = Arrays.asList(parts).stream()
+                                            .map(part -> part.trim())
+                                            .anyMatch(part -> wordTypeMapping.get(search.getPartOfSpeechLevel1()).contains(part));
+                                    // 当SearchResult有词性，但是和搜索目标不符合时，放弃之
+                                    return match;
+                                } else {
+                                    return true;
+                                }
+                            }
+                        })*/
+                        .findFirst()
+                )
+                .orElse(null);
+    }
 
 }

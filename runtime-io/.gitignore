@@ -1,0 +1,8 @@
+*.json
+*.txt
+*.kara
+*.png
+!example-*.png
+!example-*.json
+!example-*.txt
+!example-*.kra

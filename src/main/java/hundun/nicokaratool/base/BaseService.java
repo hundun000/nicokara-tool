@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public abstract class BaseService<T_PARSED_LINE> {
     public static final String CACHE_FOLDER = "data/caches/";
-    public static final String RUNTIME_INPUT_FOLDER = "runtime-input/";
+    public static final String RUNTIME_IO_FOLDER = "runtime-io/";
     protected ObjectMapper normalObjectMapper = new ObjectMapper();
     protected ObjectMapper fileObjectMapper = new ObjectMapper();
     ILyricsRender<T_PARSED_LINE> lyricsRender;
@@ -36,9 +36,9 @@ public abstract class BaseService<T_PARSED_LINE> {
 
         boolean needCreateRootHint = false;
 
-        List<String> lines = Utils.readAllLines(RUNTIME_INPUT_FOLDER + name + ".txt");
+        List<String> lines = Utils.readAllLines(RUNTIME_IO_FOLDER + name + ".txt");
         RootHint rootHint;
-        File rootHintFile = new File(RUNTIME_INPUT_FOLDER + name + ".rootHint.json");
+        File rootHintFile = new File(RUNTIME_IO_FOLDER + name + ".rootHint.json");
         if (rootHintFile.exists()) {
             rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
         } else {
