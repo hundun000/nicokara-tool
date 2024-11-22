@@ -22,7 +22,7 @@ public class Cell {
     /**
      * 不含xPreferredSpace的ContextMaxWidth
      */
-    public static final int defaultSingleContentMaxWidth = 100;
+    public static final int defaultSingleContentMaxWidth = 150;
     @JsonIgnore
     @ToString.Exclude
     Table table;
@@ -153,63 +153,5 @@ public class Cell {
         }
     }
 
-    @Data
-    @AllArgsConstructor
-    @Builder
-    public static class DrawContext {
-        Canvas canvas;
-        Typeface face;
-    }
-    static Paint fill = new Paint().setColor(0xFF000000);
-    static Paint debugFill = new Paint().setColor(0xFF8B0000);
-    public void draw(DrawContext drawContext) {
-        if (!wrappedText.isEmpty()) {
-            Font font = new Font(drawContext.getFace(), fontSize);
-            for (int i = 0; i < wrappedText.size(); i++) {
-                drawContext.getCanvas().drawString(
-                        wrappedText.get(i),
-                        table.getX() + xInTable + xContentInCell,
-                         table.getY() + yInTable + yContentInCell + fontSize * (i + 1),
-                        font,
-                        fill);
-            }
-            if (table.isDebug()) {
-                Point[] contentCoords = new Point[] {
-                        // up
-                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell),
-                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell),
-                        // right
-                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell),
-                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell + contentHeight),
-                        // down
-                        new Point(table.getX() + xInTable + xContentInCell + contentWidth, table.getY() + yInTable + yContentInCell + contentHeight),
-                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell + contentHeight),
-                        // left
-                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell + contentHeight),
-                        new Point(table.getX() + xInTable + xContentInCell, table.getY() + yInTable + yContentInCell),
-                };
-                drawContext.getCanvas().drawLines(contentCoords, debugFill);
-            }
-        }
-        Point[] cellCoords = new Point[] {
-                // up
-                new Point(table.getX() + xInTable, table.getY() + yInTable),
-                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable),
-                // right
-                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable),
-                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable + layoutHeight),
-                // down
-                new Point(table.getX() + xInTable + layoutWidth, table.getY() + yInTable + layoutHeight),
-                new Point(table.getX() + xInTable, table.getY() + yInTable + layoutHeight),
-                // left
-                new Point(table.getX() + xInTable, table.getY() + yInTable + layoutHeight),
-                new Point(table.getX() + xInTable, table.getY() + yInTable),
-        };
-        drawContext.getCanvas().drawLines(cellCoords, fill);
-        if (belowCells != null) {
-            for (var belowCell : belowCells) {
-                belowCell.draw(drawContext);
-            }
-        }
-    }
+
 }

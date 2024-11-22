@@ -4,10 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.layout.Align;
+import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import hundun.nicokaratool.layout.TableBuilder.CellBuilder;
 import org.junit.Test;
+
+import java.util.List;
 
 public class TableTest {
 
@@ -43,13 +46,13 @@ public class TableTest {
         table = tableBuilder.build();
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER + testName + "_default_output.png");
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_default_output.png", List.of(table), 5);
 
         tableBuilder.setAlign(Align.right);
         table = tableBuilder.build();
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER + testName + "_right_output.png");
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_right_output.png", List.of(table), 5);
     }
 
 

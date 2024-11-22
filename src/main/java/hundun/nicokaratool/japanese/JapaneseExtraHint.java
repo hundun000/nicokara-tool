@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -16,7 +17,9 @@ public class JapaneseExtraHint {
     @Builder
     @Data
     public static class TranslationResultItem {
-        String jaText;
-        String zhText;
+        String jaSearch;
+        String jaOrigin;
+        List<String> jaWordTags;
+        String zhDetail;
     }
 }

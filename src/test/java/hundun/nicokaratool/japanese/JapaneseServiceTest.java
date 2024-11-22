@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.NicokaraLyricsRender;
+import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class JapaneseServiceTest {
         tableBuilder.setYPreferredSpace(space);
         Table table = tableBuilder.build();
         System.out.println(objectMapper.writeValueAsString(table));
-        table.draw(TEST_OUTPUT_FOLDER + this.getClass().getSimpleName() + "_" + text + "_output.png");
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + this.getClass().getSimpleName() + "_" + text + "_output.png", List.of(table), space);
     }
 
     @Test

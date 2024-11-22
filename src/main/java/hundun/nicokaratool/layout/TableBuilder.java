@@ -54,22 +54,38 @@ public class TableBuilder {
 
     public static CellBuilder cellFromToken(JapaneseParsedToken parsedToken, JapaneseExtraHint japaneseExtraHint) {
         CellBuilder current;
+        // 实际图片位置：按代码构造顺序，从下至上
+        // layer cellFromSubToken
         current = CellBuilder.builder()
                 .rawText(parsedToken.getPartOfSpeechLevel1())
-                .fontSize(20)
+                .fontSize(KANJI_FONT_SIZE)
                 .belowCells(
                         parsedToken.getSubTokens().stream()
                                 .map(it -> cellFromSubToken(it))
                                 .collect(Collectors.toList())
                 )
                 .build();
+        // layer ZhDetail
         current = CellBuilder.builder()
                 .rawText(
                         Optional.ofNullable(japaneseExtraHint.getParsedTokensIndexToMojiHintMap().get(parsedToken.getIndex()))
-                                .map(it -> it.getZhText())
+                                .map(it -> "[" + it.getJaWordTags().stream().collect(Collectors.joining("|")) + "]" + it.getJaOrigin()
+                                )
                                 .orElse("")
                 )
-                .fontSize(20)
+                .fontSize(KANJI_FONT_SIZE)
+                .belowCells(
+                        List.of(current)
+                )
+                .build();
+        // layer ZhDetail
+        current = CellBuilder.builder()
+                .rawText(
+                        Optional.ofNullable(japaneseExtraHint.getParsedTokensIndexToMojiHintMap().get(parsedToken.getIndex()))
+                                .map(it -> it.getZhDetail())
+                                .orElse("")
+                )
+                .fontSize(KANJI_FONT_SIZE)
                 .belowCells(
                         List.of(current)
                 )

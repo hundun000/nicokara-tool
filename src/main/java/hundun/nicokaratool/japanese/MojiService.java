@@ -72,40 +72,60 @@ public class MojiService {
                 return false;
         }
     }
-
-    private TranslationResultItem postHandleToTranslationResult(String search, SearchResultItem searchResultItem) {
+    static Pattern jaWordTypePattern = Pattern.compile("^(\\[.*?])");
+    private TranslationResultItem postHandleToTranslationResult(JapaneseParsedToken search, SearchResultItem searchResultItem) {
         int excerptCutLength = 30;
         return Optional.ofNullable(searchResultItem)
-                .map(itt -> TranslationResultItem.builder()
-                        .jaText(search)
-                        .zhText(
-                                Optional.of(itt.getTitle())
-                                        .map(it -> {
-                                            it = it.replace("①", "").replace("②", "");
-                                            var parts = it.split("\\|");
-                                            boolean match = Arrays.asList(parts).stream()
-                                                    .map(part -> part.trim())
-                                                    .anyMatch(part -> part.equals(search));
-                                            if (match) {
-                                                return "";
-                                            } else {
-                                                return parts[0] + "：";
-                                            }
-                                        })
-                                        .get()
-                                +
-                                Optional.of(itt.getExcerpt())
-                                        .map(it -> {
-                                            if (it.length() > excerptCutLength) {
-                                                return it.substring(0, excerptCutLength) + "...";
-                                            } else {
-                                                return it;
-                                            }
-                                        })
-                                        .get()
-                        )
-                        .build()
-                )
+                .map(itt -> {
+                    Matcher matcher = jaWordTypePattern.matcher(itt.getExcerpt());
+                    String jaWordTagsText = matcher.find() ? matcher.group(1) : "";
+                    return TranslationResultItem.builder()
+                            .jaSearch(search.getSurface())
+                            .jaWordTags(
+                                    Optional.of(itt.getExcerpt())
+                                            .map(it -> {
+                                                    if (!jaWordTagsText.isEmpty()) {
+                                                        var parts = jaWordTagsText
+                                                                .replace("[", "")
+                                                                .replace("]", "")
+                                                                .split("\\|");
+                                                        return Arrays.asList(parts);
+                                                    } else {
+                                                        return List.of(it);
+                                                    }
+                                            })
+                                            .get()
+                            )
+                            .jaOrigin(
+                                    Optional.ofNullable(itt.getTitle())
+                                            .map(it -> {
+                                                it = it.replace("①", "").replace("②", "");
+                                                var parts = it.split("\\|");
+                                                boolean match = Arrays.asList(parts).stream()
+                                                        .map(part -> part.trim())
+                                                        .anyMatch(part -> part.equals(search.getSurface()));
+                                                if (match) {
+                                                    return null;
+                                                } else {
+                                                    return parts[0];
+                                                }
+                                            })
+                                            .orElse("")
+                            )
+                            .zhDetail(
+                                    Optional.of(itt.getExcerpt())
+                                            .map(it -> jaWordTagsText.isEmpty() ? it : it.replace(jaWordTagsText, ""))
+                                            .map(it -> {
+                                                if (it.length() > excerptCutLength) {
+                                                    return it.substring(0, excerptCutLength) + "...";
+                                                } else {
+                                                    return it;
+                                                }
+                                            })
+                                            .get()
+                            )
+                            .build();
+                })
                 .orElse(null);
     }
 
@@ -124,7 +144,7 @@ public class MojiService {
                     response = cache.mojiDictResponseCacheMap.get(search);
                 }
                 SearchResultItem searchResultItem = findFirstSearchResultItem(it, response);
-                TranslationResultItem translationResultItem = postHandleToTranslationResult(search, searchResultItem);
+                TranslationResultItem translationResultItem = postHandleToTranslationResult(it, searchResultItem);
                 cache.mojiDictResponseCacheMap.put(it.getSurface(), response);
                 parsedTokensIndexToMojiHintMap.put(i, translationResultItem);
                 cacheDirty = true;
@@ -148,7 +168,7 @@ public class MojiService {
 
     @Nullable
     public SearchResultItem findFirstSearchResultItem(JapaneseParsedToken search, @Nullable MojiDictResponse response) {
-        Pattern pattern = Pattern.compile("^\\[(.*?)]");
+
         return Optional.ofNullable(response)
                 .map(it -> it.getResult())
                 .map(it -> it.getResults())

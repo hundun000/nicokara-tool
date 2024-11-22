@@ -21,6 +21,7 @@ import com.atilika.kuromoji.ipadic.Tokenizer;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
+import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.Table;
 import hundun.nicokaratool.layout.TableBuilder;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
@@ -347,7 +348,7 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     public void workStep2(ServiceResult<JapaneseLine> serviceResult, String name) {
         if (argPackage.outputImage) {
             int space = 5;
-            Table.multiDraw(
+            ImageRender.multiDraw(
                     RUNTIME_IO_FOLDER + name + "_all_output.png",
                     serviceResult.getLines().stream()
                             .map(line -> {
