@@ -4,6 +4,10 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
 import hundun.nicokaratool.japanese.JapaneseExtraHint;
+import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
+import hundun.nicokaratool.layout.ImageRender;
+import io.github.humbleui.skija.Font;
+import io.github.humbleui.skija.Typeface;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -47,8 +51,24 @@ public class TableBuilder {
                                 .collect(Collectors.toList())
                 )
                 .build();
+        String timeText =
+                Optional.ofNullable(line.getStartTime())
+                        .map(it -> it.toLyricsTime())
+                        .orElse(TagToken.unknownLyricsTime())
+                        + " ~ "
+                        + Optional.ofNullable(line.getEndTime())
+                        .map(it -> it.toLyricsTime())
+                        .orElse(TagToken.unknownLyricsTime())
+                ;
+        CellBuilder lineTimeCell = CellBuilder.builder()
+                .rawText(timeText)
+                .fontSize(KANJI_FONT_SIZE)
+                .belowCells(
+                        List.of(chineseRootCell)
+                )
+                .build();
         TableBuilder table = new TableBuilder();
-        table.getDummyRootCell().getBelowCells().add(chineseRootCell);
+        table.getDummyRootCell().getBelowCells().add(lineTimeCell);
         return table;
     }
 
@@ -155,7 +175,7 @@ public class TableBuilder {
         }
     }
 
-    public Table build() {
+    public Table build(Typeface face) {
         Cell dummyRootCell = this.dummyRootCell.build();
         Table table = new Table();
         if (this.align != null) {
@@ -169,7 +189,7 @@ public class TableBuilder {
         }
         table.setDummyRootCell(dummyRootCell);
 
-        table.getDummyRootCell().update(table, null);
+        table.getDummyRootCell().update(face, table, null);
         table.getDummyRootCell().update2(table, null);
         table.getDummyRootCell().update3(table, null, 0);
         return table;

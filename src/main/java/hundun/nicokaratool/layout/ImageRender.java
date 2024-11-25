@@ -17,7 +17,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 public class ImageRender {
-
+    public static Typeface face = Typeface.makeFromFile("data/Fonts/MiSans-Normal.ttf");
     @Data
     @AllArgsConstructor
     @Builder
@@ -78,8 +78,7 @@ public class ImageRender {
         }
     }
 
-    public static void multiDraw(String outputFilePathName, List<Table> tableList, int space) {
-        Typeface face = Typeface.makeFromFile("data/Fonts/MiSans-Normal.ttf");
+    public static void multiDraw(String outputFilePathName, List<Table> tableList, int space, boolean debugImage) {
 
         int surfaceWidth = tableList.stream()
                 .mapToInt(it -> it.getRightBound() + space)
@@ -97,6 +96,7 @@ public class ImageRender {
         int yOffset = 0;
         for (var table : tableList) {
             table.setY(yOffset);
+            table.setDebug(debugImage);
             ImageRender.draw(table.getDummyRootCell(), drawContext);
             yOffset += (table.getDepthBound() + space);
         }

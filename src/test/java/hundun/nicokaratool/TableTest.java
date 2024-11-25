@@ -43,16 +43,16 @@ public class TableTest {
 
         Table table;
         int i = 0;
-        table = tableBuilder.build();
+        table = tableBuilder.build(ImageRender.face);
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_default_output.png", List.of(table), 5);
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_default_output.png", List.of(table), 5, true);
 
         tableBuilder.setAlign(Align.right);
-        table = tableBuilder.build();
+        table = tableBuilder.build(ImageRender.face);
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_right_output.png", List.of(table), 5);
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_right_output.png", List.of(table), 5, true);
     }
 
 

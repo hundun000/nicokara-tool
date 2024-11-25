@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
+import hundun.nicokaratool.japanese.JapaneseService.WorkArgPackage;
 import hundun.nicokaratool.layout.DebugLyricsRender;
-import hundun.nicokaratool.layout.NicokaraLyricsRender;
 import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.table.Table;
 import hundun.nicokaratool.layout.table.TableBuilder;
@@ -26,10 +26,23 @@ public class JapaneseServiceTest {
     MojiService mojiService = new MojiService();
 
     @Test
-    public void testAll() throws IOException {
-        String name = "example-japanese";
+    public void testAllFeaturesLong() throws IOException {
+        String name = "example-japanese-long";
 
-        japaneseService.argPackage.outputImage = true;
+        japaneseService.argPackage = WorkArgPackage.getAllFeatures();
+        ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
+
+        System.out.println("Lines: ");
+        System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
+
+        japaneseService.workStep2(serviceResult, name);
+    }
+
+    @Test
+    public void testAllFeaturesShort() throws IOException {
+        String name = "example-japanese-short";
+
+        japaneseService.argPackage = WorkArgPackage.getAllFeatures();
         ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
 
         System.out.println("Lines: ");
@@ -50,9 +63,9 @@ public class JapaneseServiceTest {
         TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
         tableBuilder.setXPreferredSpace(space);
         tableBuilder.setYPreferredSpace(space);
-        Table table = tableBuilder.build();
+        Table table = tableBuilder.build(ImageRender.face);
         System.out.println(objectMapper.writeValueAsString(table));
-        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + this.getClass().getSimpleName() + "_" + text + "_output.png", List.of(table), space);
+        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + this.getClass().getSimpleName() + "_" + text + "_output.png", List.of(table), space, true);
     }
 
     @Test

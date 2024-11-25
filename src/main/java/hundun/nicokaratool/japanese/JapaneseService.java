@@ -8,10 +8,7 @@ import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.atilika.kuromoji.ipadic.Token;
@@ -59,12 +56,24 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     public static class WorkArgPackage {
         boolean withTranslation;
         boolean outputImage;
+        boolean debugImage;
         boolean outputNicokara;
+        boolean outputVideo;
 
         public static WorkArgPackage getDefault() {
             return WorkArgPackage.builder()
                     .withTranslation(false)
+                    .outputNicokara(false)
+                    .build();
+        }
+
+        public static WorkArgPackage getAllFeatures() {
+            return WorkArgPackage.builder()
+                    .withTranslation(true)
                     .outputNicokara(true)
+                    .outputImage(true)
+                    .debugImage(true)
+                    .outputVideo(true)
                     .build();
         }
     }
@@ -118,6 +127,8 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         List<JapaneseParsedToken> parsedTokens;
         String chinese;
         String surface;
+        TagToken startTime;
+        TagToken endTime;
     }
 
     public enum SubtitleTimeSourceType {
@@ -371,7 +382,6 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                 ])
          ...
 
-
          */
 
 
@@ -443,6 +453,20 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
 
     public void workStep2(ServiceResult<JapaneseLine> serviceResult, String name) {
+        serviceResult.getLines().forEach(it -> {
+            if (!it.getTagTokens().isEmpty()) {
+                it.setStartTime(
+                        Optional.ofNullable(it.getTagTokens().get(0))
+                                .filter(itt -> itt.getType() == TagTokenType.TIME_TAG)
+                                .orElse(null)
+                );
+                it.setEndTime(
+                        Optional.ofNullable(it.getTagTokens().get(it.getTagTokens().size() - 1))
+                                .filter(itt -> itt.getType() == TagTokenType.TIME_TAG)
+                                .orElse(null)
+                );
+            }
+        });
         if (argPackage.outputImage) {
             int space = 5;
             ImageRender.multiDraw(
@@ -455,16 +479,21 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                                 TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
                                 tableBuilder.setXPreferredSpace(space);
                                 tableBuilder.setYPreferredSpace(space);
-                                Table table = tableBuilder.build();
+                                Table table = tableBuilder.build(ImageRender.face);
                                 return table;
                             })
                             .collect(Collectors.toList()),
-                    space
+                    space,
+                    argPackage.debugImage
             );
         }
         if (argPackage.outputNicokara) {
             String kraFileText = serviceResult.getLyricsText() + "\n" + serviceResult.getRuby();
             Utils.writeAllLines(RUNTIME_IO_FOLDER + name + ".kra", kraFileText);
+        }
+        if (argPackage.outputVideo) {
+
+
         }
     }
 }

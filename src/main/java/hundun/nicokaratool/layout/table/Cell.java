@@ -1,6 +1,8 @@
 package hundun.nicokaratool.layout.table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.github.humbleui.skija.Font;
+import io.github.humbleui.skija.Typeface;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -54,12 +56,13 @@ public class Cell {
      * layoutHeight;
      * 并未被决定；
      */
-    public void update(Table table, @Nullable Cell aboveCell) {
+    public void update(Typeface typeface, Table table, @Nullable Cell aboveCell) {
+        Font font = new Font(typeface, fontSize);
         this.table = table;
         this.layer = aboveCell == null ? 0 : aboveCell.getLayer() + 1;
         int preferredWidthFromRawText = Math.min((rawText.length() * fontSize), defaultSingleContentMaxWidth);
         if (belowCells != null) {
-            belowCells.forEach(it -> it.update(table, this));
+            belowCells.forEach(it -> it.update(typeface, table, this));
             int belowCellsSumPreferredWidth = belowCells.stream()
                     .mapToInt(it -> it.getPreferredWidth())
                     .sum();
@@ -67,27 +70,28 @@ public class Cell {
         } else {
             this.preferredWidth = table.xPreferredSpace * 2 + preferredWidthFromRawText;
         }
-        int charPerLineMax = rawText.length() == 0 ? 0 : (this.preferredWidth / fontSize);
-        this.contentWidth = Math.min(rawText.length(), charPerLineMax) * fontSize;
-        int lineCount = rawText.length() == 0 ? 1 : ((rawText.length() / charPerLineMax) + (rawText.length() % charPerLineMax != 0 ? 1 : 0));
-        this.preferredHeight = table.yPreferredSpace * 2 + lineCount * fontSize;
-        this.contentHeight = rawText.length() == 0 ? 0 :lineCount * fontSize;
-        table.getLayerCellsMaxPreferredHeightMap().merge(this.layer, preferredHeight, (o1, o2) -> Math.max(o1, o2));
-        List<String> wrappedTextBuilder = new ArrayList<>();
+
+        this.contentWidth = Math.min((int) font.measureTextWidth(rawText), this.preferredWidth);
+
+        List<String> wrappedTextBuilderList = new ArrayList<>();
         StringBuilder wrappedTextLine = new StringBuilder();
         for (int i = 0; i < rawText.length(); i++) {
             wrappedTextLine.append(rawText.charAt(i));
-            if (i % charPerLineMax == charPerLineMax - 1) {
-                wrappedTextBuilder.add(wrappedTextLine.toString());
+            String checkingNextChar = (i + 1 < rawText.length()) ? (wrappedTextLine.toString() + rawText.charAt(i)) : "";
+            if (font.measureTextWidth(checkingNextChar) > this.preferredWidth) {
+                wrappedTextBuilderList.add(wrappedTextLine.toString());
                 wrappedTextLine.setLength(0);
             }
         }
         if (wrappedTextLine.length() > 0) {
-            wrappedTextBuilder.add(wrappedTextLine.toString());
+            wrappedTextBuilderList.add(wrappedTextLine.toString());
         }
-        this.wrappedText = wrappedTextBuilder;
+        this.wrappedText = wrappedTextBuilderList;
+        int lineCount = wrappedTextBuilderList.size();
+        this.preferredHeight = table.yPreferredSpace * 2 + lineCount * fontSize;
+        this.contentHeight = rawText.isEmpty() ? 0 :lineCount * fontSize;
+        table.getLayerCellsMaxPreferredHeightMap().merge(this.layer, preferredHeight, (o1, o2) -> Math.max(o1, o2));
     }
-
 
     public void update2(Table table, @Nullable Cell aboveCell) {
         // tempLayoutWidth before child

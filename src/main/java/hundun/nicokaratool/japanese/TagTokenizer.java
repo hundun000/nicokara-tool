@@ -138,6 +138,10 @@ public class TagTokenizer {
                     timeMillisecond / 10
             );
         }
+
+        public static String unknownLyricsTime() {
+            return "[??:??:??]";
+        }
     }
 
 
