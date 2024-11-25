@@ -3,7 +3,6 @@ package hundun.nicokaratool.japanese;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import hundun.nicokaratool.japanese.JapaneseService.SimpleLyricsRender;
 import org.junit.Test;
 
 

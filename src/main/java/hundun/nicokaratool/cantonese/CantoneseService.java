@@ -9,7 +9,7 @@ import hundun.nicokaratool.base.lyrics.LyricLine.LyricToken;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleRequest;
 import hundun.nicokaratool.cantonese.PycantoneseFeignClient.YaleResponse;
-import hundun.nicokaratool.base.lyrics.StandardLyricsRender;
+import hundun.nicokaratool.layout.StandardLyricsRender;
 import lombok.*;
 import org.jetbrains.annotations.Nullable;
 

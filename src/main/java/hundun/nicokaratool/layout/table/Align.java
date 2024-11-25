@@ -1,4 +1,4 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.table;
 
 public class Align {
     static public final int center = 1 << 0;

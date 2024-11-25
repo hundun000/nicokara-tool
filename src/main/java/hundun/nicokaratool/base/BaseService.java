@@ -3,7 +3,7 @@ package hundun.nicokaratool.base;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.KanjiHintPO.PronounceHint;
-import hundun.nicokaratool.base.lyrics.ILyricsRender;
+import hundun.nicokaratool.layout.ILyricsRender;
 import hundun.nicokaratool.util.Utils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

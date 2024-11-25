@@ -1,11 +1,6 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.github.humbleui.skija.Canvas;
-import io.github.humbleui.skija.Font;
-import io.github.humbleui.skija.Paint;
-import io.github.humbleui.skija.Typeface;
-import io.github.humbleui.types.Point;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

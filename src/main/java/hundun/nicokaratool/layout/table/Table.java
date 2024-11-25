@@ -1,17 +1,9 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.table;
 
 
-import hundun.nicokaratool.layout.ImageRender.DrawContext;
-import io.github.humbleui.skija.*;
 import lombok.Data;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Data

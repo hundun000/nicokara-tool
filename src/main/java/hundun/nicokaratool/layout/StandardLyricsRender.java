@@ -1,4 +1,6 @@
-package hundun.nicokaratool.base.lyrics;
+package hundun.nicokaratool.layout;
+
+import hundun.nicokaratool.base.lyrics.LyricLine;
 
 import java.util.stream.Collectors;
 

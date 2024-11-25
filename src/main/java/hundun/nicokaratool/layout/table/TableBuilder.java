@@ -1,4 +1,4 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.table;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;

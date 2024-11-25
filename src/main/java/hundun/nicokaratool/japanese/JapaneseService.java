@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
-import hundun.nicokaratool.base.lyrics.ILyricsRender;
+import hundun.nicokaratool.layout.ILyricsRender;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
@@ -22,8 +22,9 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
 import hundun.nicokaratool.layout.ImageRender;
-import hundun.nicokaratool.layout.Table;
-import hundun.nicokaratool.layout.TableBuilder;
+import hundun.nicokaratool.layout.NicokaraLyricsRender;
+import hundun.nicokaratool.layout.table.Table;
+import hundun.nicokaratool.layout.table.TableBuilder;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
 import hundun.nicokaratool.util.Utils;
 import lombok.AllArgsConstructor;
@@ -120,57 +121,6 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         List<TagToken> tagTokens;
         List<JapaneseParsedToken> parsedTokens;
         String chinese;
-    }
-
-    public static class SimpleLyricsRender implements ILyricsRender<JapaneseLine> {
-        public static SimpleLyricsRender INSTANCE = new SimpleLyricsRender();
-        @Override
-        public String toLyricsLine(JapaneseLine japaneseLine) {
-            return japaneseLine.parsedTokens.stream()
-                    .flatMap(it -> it.getSubTokens().stream())
-                    .map(it -> {
-                        if (it.typeKanji()) {
-                            return String.format("%s(%s)",
-                                    it.kanji,
-                                    it.furigana
-                            );
-                        } else {
-                            return it.kana;
-                        }
-                    })
-                    .collect(Collectors.joining());
-        }
-    }
-
-    public static class NicokaraLyricsRender implements ILyricsRender<JapaneseLine> {
-        public static NicokaraLyricsRender INSTANCE = new NicokaraLyricsRender();
-
-        @Override
-        public String toLyricsLine(JapaneseLine japaneseLine) {
-            StringBuilder result = new StringBuilder();
-            var tagTokenIterator = japaneseLine.getTagTokens().iterator();
-            var subTokenIterator = japaneseLine.getParsedTokens().stream()
-                    .flatMap(it -> it.getSubTokens().stream())
-                    .flatMap(it -> it.getSurface().chars().mapToObj(itt -> (char)itt))
-                    .iterator();
-            while (tagTokenIterator.hasNext()) {
-                TagToken tagToken = tagTokenIterator.next();
-                if (tagToken.getType() == TagTokenType.TEXT) {
-                    StringBuilder collectingText = new StringBuilder();
-                    while (!collectingText.toString().equals(tagToken.text)) {
-                        if (subTokenIterator.hasNext()) {
-                            collectingText.append(subTokenIterator.next());
-                        } else {
-                            throw new RuntimeException("collectingText = " + collectingText + ", target = " + tagToken.text + ", not found.");
-                        }
-                    }
-                    result.append(collectingText);
-                } else {
-                    result.append(tagToken.toLyricsTime());
-                }
-            }
-            return result.toString() + "\n";
-        }
     }
 
 

@@ -2,15 +2,12 @@ package hundun.nicokaratool.japanese;
 
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.layout.Table;
-import hundun.nicokaratool.layout.TableBuilder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static hundun.nicokaratool.japanese.JapaneseService.objectMapper;
 

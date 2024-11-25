@@ -2,7 +2,7 @@ package hundun.nicokaratool.japanese;
 
 import static org.junit.Assert.*;
 
-import hundun.nicokaratool.japanese.JapaneseService.SimpleLyricsRender;
+import hundun.nicokaratool.layout.SimpleLyricsRender;
 import org.junit.Test;
 
 /**

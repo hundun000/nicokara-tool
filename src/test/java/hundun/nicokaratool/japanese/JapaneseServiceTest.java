@@ -5,15 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.NicokaraLyricsRender;
+import hundun.nicokaratool.layout.NicokaraLyricsRender;
 import hundun.nicokaratool.layout.ImageRender;
-import hundun.nicokaratool.layout.Table;
-import hundun.nicokaratool.layout.TableBuilder;
+import hundun.nicokaratool.layout.table.Table;
+import hundun.nicokaratool.layout.table.TableBuilder;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static hundun.nicokaratool.TableTest.TEST_OUTPUT_FOLDER;
 

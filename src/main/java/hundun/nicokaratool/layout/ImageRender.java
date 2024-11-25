@@ -1,5 +1,8 @@
 package hundun.nicokaratool.layout;
 
+
+import hundun.nicokaratool.layout.table.Cell;
+import hundun.nicokaratool.layout.table.Table;
 import io.github.humbleui.skija.*;
 import io.github.humbleui.types.Point;
 import lombok.AllArgsConstructor;
@@ -25,51 +28,51 @@ public class ImageRender {
     static Paint fill = new Paint().setColor(0xFF000000);
     static Paint debugFill = new Paint().setColor(0xFF8B0000);
     public static void draw(Cell cell, DrawContext drawContext) {
-        if (!cell.wrappedText.isEmpty()) {
-            Font font = new Font(drawContext.getFace(), cell.fontSize);
-            for (int i = 0; i < cell.wrappedText.size(); i++) {
+        if (!cell.getWrappedText().isEmpty()) {
+            Font font = new Font(drawContext.getFace(), cell.getFontSize());
+            for (int i = 0; i < cell.getWrappedText().size(); i++) {
                 drawContext.getCanvas().drawString(
-                        cell.wrappedText.get(i),
-                        cell.table.getX() + cell.xInTable + cell.xContentInCell,
-                        cell.table.getY() + cell.yInTable + cell.yContentInCell + cell.fontSize * (i + 1),
+                        cell.getWrappedText().get(i),
+                        cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell(),
+                        cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell() + cell.getFontSize() * (i + 1),
                         font,
                         fill);
             }
-            if (cell.table.isDebug()) {
+            if (cell.getTable().isDebug()) {
                 Point[] contentCoords = new Point[] {
                         // up
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell, cell.table.getY() + cell.yInTable + cell.yContentInCell),
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell + cell.contentWidth, cell.table.getY() + cell.yInTable + cell.yContentInCell),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell()),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell() + cell.getContentWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell()),
                         // right
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell + cell.contentWidth, cell.table.getY() + cell.yInTable + cell.yContentInCell),
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell + cell.contentWidth, cell.table.getY() + cell.yInTable + cell.yContentInCell + cell.contentHeight),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell() + cell.getContentWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell()),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell() + cell.getContentWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell() + cell.getContentHeight()),
                         // down
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell + cell.contentWidth, cell.table.getY() + cell.yInTable + cell.yContentInCell + cell.contentHeight),
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell, cell.table.getY() + cell.yInTable + cell.yContentInCell + cell.contentHeight),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell() + cell.getContentWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell() + cell.getContentHeight()),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell() + cell.getContentHeight()),
                         // left
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell, cell.table.getY() + cell.yInTable + cell.yContentInCell + cell.contentHeight),
-                        new Point(cell.table.getX() + cell.xInTable + cell.xContentInCell, cell.table.getY() + cell.yInTable + cell.yContentInCell),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell() + cell.getContentHeight()),
+                        new Point(cell.getTable().getX() + cell.getXInTable() + cell.getXContentInCell(), cell.getTable().getY() + cell.getYInTable() + cell.getYContentInCell()),
                 };
                 drawContext.getCanvas().drawLines(contentCoords, debugFill);
             }
         }
         Point[] cellCoords = new Point[] {
                 // up
-                new Point(cell.table.getX() + cell.xInTable, cell.table.getY() + cell.yInTable),
-                new Point(cell.table.getX() + cell.xInTable + cell.layoutWidth, cell.table.getY() + cell.yInTable),
+                new Point(cell.getTable().getX() + cell.getXInTable(), cell.getTable().getY() + cell.getYInTable()),
+                new Point(cell.getTable().getX() + cell.getXInTable() + cell.getLayoutWidth(), cell.getTable().getY() + cell.getYInTable()),
                 // right
-                new Point(cell.table.getX() + cell.xInTable + cell.layoutWidth, cell.table.getY() + cell.yInTable),
-                new Point(cell.table.getX() + cell.xInTable + cell.layoutWidth, cell.table.getY() + cell.yInTable + cell.layoutHeight),
+                new Point(cell.getTable().getX() + cell.getXInTable() + cell.getLayoutWidth(), cell.getTable().getY() + cell.getYInTable()),
+                new Point(cell.getTable().getX() + cell.getXInTable() + cell.getLayoutWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getLayoutHeight()),
                 // down
-                new Point(cell.table.getX() + cell.xInTable + cell.layoutWidth, cell.table.getY() + cell.yInTable + cell.layoutHeight),
-                new Point(cell.table.getX() + cell.xInTable, cell.table.getY() + cell.yInTable + cell.layoutHeight),
+                new Point(cell.getTable().getX() + cell.getXInTable() + cell.getLayoutWidth(), cell.getTable().getY() + cell.getYInTable() + cell.getLayoutHeight()),
+                new Point(cell.getTable().getX() + cell.getXInTable(), cell.getTable().getY() + cell.getYInTable() + cell.getLayoutHeight()),
                 // left
-                new Point(cell.table.getX() + cell.xInTable, cell.table.getY() + cell.yInTable + cell.layoutHeight),
-                new Point(cell.table.getX() + cell.xInTable, cell.table.getY() + cell.yInTable),
+                new Point(cell.getTable().getX() + cell.getXInTable(), cell.getTable().getY() + cell.getYInTable() + cell.getLayoutHeight()),
+                new Point(cell.getTable().getX() + cell.getXInTable(), cell.getTable().getY() + cell.getYInTable()),
         };
         drawContext.getCanvas().drawLines(cellCoords, fill);
-        if (cell.belowCells != null) {
-            for (var belowCell : cell.belowCells) {
+        if (cell.getBelowCells() != null) {
+            for (var belowCell : cell.getBelowCells()) {
                 draw(belowCell, drawContext);
             }
         }
@@ -83,7 +86,7 @@ public class ImageRender {
                 .max()
                 .orElse(1);
         int surfaceHeight = tableList.stream()
-                .mapToInt(it -> it.depthBound + space)
+                .mapToInt(it -> it.getDepthBound() + space)
                 .sum();
         Surface surface = Surface.makeRasterN32Premul(surfaceWidth, surfaceHeight);
 
@@ -93,9 +96,9 @@ public class ImageRender {
 
         int yOffset = 0;
         for (var table : tableList) {
-            table.y = yOffset;
-            ImageRender.draw(table.dummyRootCell, drawContext);
-            yOffset += (table.depthBound + space);
+            table.setY(yOffset);
+            ImageRender.draw(table.getDummyRootCell(), drawContext);
+            yOffset += (table.getDepthBound() + space);
         }
 
         Image image = surface.makeImageSnapshot();
