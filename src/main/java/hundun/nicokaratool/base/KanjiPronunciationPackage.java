@@ -2,6 +2,7 @@ package hundun.nicokaratool.base;
 
 import hundun.nicokaratool.base.lyrics.LyricLine.LyricTimestamp;
 import hundun.nicokaratool.base.lyrics.LyricLine.LyricToken;
+import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
 import lombok.*;
 
 import java.util.List;
@@ -39,6 +40,15 @@ public class KanjiPronunciationPackage {
                     .sourceLyricLineText("UNKNOWN")
                     .start(token.getStart())
                     .end(token.getEnd())
+                    .build();
+        }
+
+        public static SourceInfo fromSubToken(JapaneseSubToken subToken) {
+            return SourceInfo.builder()
+                    .sourceLyricLineText(subToken.getSource())
+                    .start(LyricTimestamp.parseType2("[00:00:00]"))
+                    .end(LyricTimestamp.parseType2("[99:99:99]"))
+                    .fromUnknownTimestamp(true)
                     .build();
         }
     }

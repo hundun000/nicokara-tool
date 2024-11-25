@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
+import hundun.nicokaratool.layout.DebugLyricsRender;
 import hundun.nicokaratool.layout.NicokaraLyricsRender;
 import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.table.Table;
@@ -56,10 +57,10 @@ public class JapaneseServiceTest {
 
     @Test
     public void testTagTokenizer() throws JsonProcessingException {
-        String text = "[00:22:90]大切な[00:24:03]思い[00:24:94]出を[00:25:51]";
+        String text = "[00:22:90]大切な[00:24:03]思い[00:24:94][00:24:95]出を[00:25:51]";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
         System.out.println(objectMapper.writeValueAsString(line));
-        System.out.println(NicokaraLyricsRender.INSTANCE.toLyricsLine(line));
+        System.out.println(DebugLyricsRender.INSTANCE.toLyricsLine(line));
     }
 
     @Test
@@ -67,6 +68,6 @@ public class JapaneseServiceTest {
         String text = "まだまだ言い足りないでしょ";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
         System.out.println(objectMapper.writeValueAsString(line));
-        System.out.println(NicokaraLyricsRender.INSTANCE.toLyricsLine(line));
+        System.out.println(DebugLyricsRender.INSTANCE.toLyricsLine(line));
     }
 }

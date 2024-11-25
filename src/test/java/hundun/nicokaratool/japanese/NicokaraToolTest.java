@@ -2,7 +2,7 @@ package hundun.nicokaratool.japanese;
 
 import static org.junit.Assert.*;
 
-import hundun.nicokaratool.layout.SimpleLyricsRender;
+import hundun.nicokaratool.layout.DebugLyricsRender;
 import org.junit.Test;
 
 /**
@@ -19,7 +19,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "すれ違って";
-        result = SimpleLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
+        result = DebugLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
         assertEquals("すれ違(ちが)って", result);
         
         
@@ -31,7 +31,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "抱きしめ";
-        result = SimpleLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
+        result = DebugLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
         assertEquals("抱(だ)きしめ", result);
 
         
@@ -44,7 +44,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "向こう";
-        result = SimpleLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
+        result = DebugLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
         assertEquals("向(む)こう", result);
         //assertEquals("向(む)こー", result);
         
@@ -57,7 +57,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "登った";
-        result = SimpleLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
+        result = DebugLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
         assertEquals("登(のぼ)った", result);
 
         
@@ -70,7 +70,7 @@ public class NicokaraToolTest {
         String result;
         
         text = "言い";
-        result = SimpleLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
+        result = DebugLyricsRender.INSTANCE.toLyricsLine(japaneseService.toParsedNoTagLine(text));
         assertEquals("言(い)い", result);
     }
 

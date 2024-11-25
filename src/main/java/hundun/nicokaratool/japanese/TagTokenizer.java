@@ -1,5 +1,6 @@
 package hundun.nicokaratool.japanese;
 
+import hundun.nicokaratool.japanese.JapaneseService.SubtitleTimeSourceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -71,8 +72,7 @@ public class TagTokenizer {
 
     public enum TagTokenType {
         TEXT,
-        TIME_ABSOLUTE_TAG,
-        TIME_OFFSET_TAG,
+        TIME_TAG,
         BAD
     }
 
@@ -87,8 +87,12 @@ public class TagTokenizer {
         int timeSecond;
         int timeMillisecond;
         TagTokenType type;
+        SubtitleTimeSourceType timeSourceType;
 
         public static TagToken create(String text) {
+            return create(text, SubtitleTimeSourceType.SPECIFIED);
+        }
+        public static TagToken create(String text, SubtitleTimeSourceType timeSourceType) {
             if (text.startsWith("[")) {
                 int i = 1;
                 int timeMinute = Integer.parseInt(text.substring(i, i + 2));
@@ -106,14 +110,16 @@ public class TagTokenizer {
                         .timeSecond(timeSecond)
                         .timeMillisecond(timeMillisecond)
                         .text(text)
-                        .type(TagTokenType.TIME_ABSOLUTE_TAG)
+                        .type(TagTokenType.TIME_TAG)
+                        .timeSourceType(timeSourceType)
                         .build();
             } else if (text.startsWith("{\\k")) {
                 int timeOffset = Integer.parseInt(text.substring("{\\k".length(), text.length() - 1));
                 return TagToken.builder()
                         .timeOffset(timeOffset)
                         .text(text)
-                        .type(TagTokenType.TIME_ABSOLUTE_TAG)
+                        .type(TagTokenType.TIME_TAG)
+                        .timeSourceType(timeSourceType)
                         .build();
             }
 
