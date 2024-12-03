@@ -13,13 +13,16 @@ public class SecretConfig {
     static ObjectMapper objectMapper = new ObjectMapper();
     public static String gptAuthorization;
     @Nullable
-    public static JsonNode proxy;
+    public static JsonNode proxyConfig;
+    @Nullable
+    public static JsonNode ffmpegConfig;
 
     static {
         try {
             JsonNode secretFile = objectMapper.readTree(new File("data/Secret/secret.json"));
             gptAuthorization = secretFile.get("gptKey").asText();
-            proxy = secretFile.get("proxy");
+            proxyConfig = secretFile.get("proxy");
+            ffmpegConfig = secretFile.get("ffmpegConfig");
         } catch (IOException e) {
             log.error("bad secretFile read:", e);
         }

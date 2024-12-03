@@ -20,7 +20,7 @@ public class GptServiceImpl {
     IGptChatFeignClient gptChatFeignClient;
 
     public GptServiceImpl() {
-        gptChatFeignClient = IGptChatFeignClient.instance(SecretConfig.proxy);
+        gptChatFeignClient = IGptChatFeignClient.instance(SecretConfig.proxyConfig);
     }
 
     public enum LlmModel {

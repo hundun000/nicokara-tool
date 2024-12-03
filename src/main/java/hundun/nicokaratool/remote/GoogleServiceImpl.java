@@ -8,7 +8,7 @@ public class GoogleServiceImpl {
     IGoogleTranslationFeignClient googleTranslationFeignClient;
 
     public GoogleServiceImpl() {
-        googleTranslationFeignClient = IGoogleTranslationFeignClient.instance(SecretConfig.proxy);
+        googleTranslationFeignClient = IGoogleTranslationFeignClient.instance(SecretConfig.proxyConfig);
     }
 
     public String translateJaToZh(
