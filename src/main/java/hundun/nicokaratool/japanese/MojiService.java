@@ -39,7 +39,7 @@ public class MojiService {
     }
 
     public void loadCache() {
-        File file = new File(BaseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
+        File file = new File(JapaneseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
         if (file.exists()) {
             try {
                 cache = fileObjectMapper.readValue(file, MojiServiceCache.class);
@@ -156,7 +156,7 @@ public class MojiService {
             }
         }
         if (cacheDirty) {
-            File file = new File(BaseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
+            File file = new File(JapaneseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
             try {
                 fileObjectMapper.writeValue(file, cache);
             } catch (IOException e) {

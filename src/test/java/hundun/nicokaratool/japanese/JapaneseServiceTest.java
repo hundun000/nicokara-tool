@@ -3,10 +3,10 @@ package hundun.nicokaratool.japanese;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import hundun.nicokaratool.base.BaseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
+import hundun.nicokaratool.japanese.JapaneseService.ServiceResult;
 import hundun.nicokaratool.japanese.JapaneseService.WorkArgPackage;
-import hundun.nicokaratool.layout.DebugLyricsRender;
+import hundun.nicokaratool.layout.text.DebugLyricsRender;
 import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.table.Table;
 import hundun.nicokaratool.layout.table.TableBuilder;
@@ -30,7 +30,7 @@ public class JapaneseServiceTest {
         String name = "example-japanese-long";
 
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
-        ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
+        ServiceResult serviceResult = japaneseService.workStep1(name);
 
         System.out.println("Lines: ");
         System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
@@ -43,7 +43,7 @@ public class JapaneseServiceTest {
         String name = "example-japanese-short";
 
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
-        ServiceResult<JapaneseLine> serviceResult = japaneseService.workStep1(name);
+        ServiceResult serviceResult = japaneseService.workStep1(name);
 
         System.out.println("Lines: ");
         System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));

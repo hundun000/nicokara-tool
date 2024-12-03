@@ -2,12 +2,15 @@ package hundun.nicokaratool.japanese;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import hundun.nicokaratool.base.BaseService;
+import hundun.nicokaratool.base.KanjiHintPO;
+import hundun.nicokaratool.base.KanjiHintPO.PronounceHint;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
 import hundun.nicokaratool.base.KanjiPronunciationPackage.SourceInfo;
 import hundun.nicokaratool.base.RootHint;
 import hundun.nicokaratool.japanese.IMojiHelper.SimpleMojiHelper;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,7 +21,8 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
 import hundun.nicokaratool.layout.ImageRender;
-import hundun.nicokaratool.layout.NicokaraLyricsRender;
+import hundun.nicokaratool.layout.text.ILyricsRender;
+import hundun.nicokaratool.layout.text.NicokaraLyricsRender;
 import hundun.nicokaratool.layout.table.Table;
 import hundun.nicokaratool.layout.table.TableBuilder;
 import hundun.nicokaratool.remote.GoogleServiceImpl;
@@ -32,8 +36,14 @@ import org.jetbrains.annotations.Nullable;
  * Created on 2023/03/08
  */
 @Slf4j
-public class JapaneseService extends BaseService<JapaneseLine> {
+public class JapaneseService {
+    public static final String CACHE_FOLDER = "data/caches/";
+    public static final String RUNTIME_IO_FOLDER = "runtime-io/";
+    protected ObjectMapper normalObjectMapper = new ObjectMapper();
+    protected ObjectMapper fileObjectMapper = new ObjectMapper();
     public static ObjectMapper objectMapper = new ObjectMapper();
+    ILyricsRender<JapaneseLine> lyricsRender;
+
     static {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
@@ -45,7 +55,8 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     GoogleServiceImpl googleService = new GoogleServiceImpl();
 
     protected JapaneseService() {
-        super(NicokaraLyricsRender.INSTANCE);
+        this.lyricsRender = new NicokaraLyricsRender();
+        fileObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
         mojiService.loadCache();
     }
 
@@ -359,7 +370,6 @@ public class JapaneseService extends BaseService<JapaneseLine> {
     }
 
 
-    @Override
     protected List<JapaneseLine> toParsedLines(List<String> lines, @Nullable RootHint rootHint) {
 
         /*
@@ -420,7 +430,6 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
 
 
-    @Override
     protected Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<JapaneseLine> lines) {
         Map<String, KanjiPronunciationPackage> map = new HashMap<>();
         lines.forEach(line -> {
@@ -452,8 +461,64 @@ public class JapaneseService extends BaseService<JapaneseLine> {
         );
     }
 
-    public void workStep2(ServiceResult<JapaneseLine> serviceResult, String name) {
-        serviceResult.getLines().forEach(it -> {
+
+    public ServiceResult workStep1(String name) throws IOException {
+
+        boolean needCreateRootHint = false;
+
+        List<String> lines = Utils.readAllLines(RUNTIME_IO_FOLDER + name + ".txt");
+        RootHint rootHint;
+        File rootHintFile = new File(RUNTIME_IO_FOLDER + name + ".rootHint.json");
+        if (rootHintFile.exists()) {
+            rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
+        } else {
+            needCreateRootHint = true;
+            rootHint = null;
+        }
+
+        List<JapaneseLine> parsedLines = toParsedLines(lines, rootHint);
+        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(parsedLines);
+
+        if (needCreateRootHint) {
+            List<KanjiHintPO> kanjiHintPOS = packageMap.values().stream()
+                    .filter(it -> it.getPronunciationMap().size() > 1)
+                    .map(it -> toKanjiHint(it))
+                    .collect(Collectors.toList());
+            rootHint = RootHint.builder()
+                    .kanjiHints(kanjiHintPOS)
+                    .nluDisallowHints(new ArrayList<>(0))
+                    .build();
+            fileObjectMapper.writeValue(rootHintFile, rootHint);
+        }
+
+
+        Map<String, KanjiHintPO> kanjiHintsMap = rootHint.getKanjiHints().stream()
+                .collect(Collectors.toMap(
+                        it -> it.getKanji(),
+                        it -> it));
+        List<String> rubyList = new ArrayList<>();
+        packageMap.forEach((kanji, kanjiInfo) -> {
+            if (kanjiHintsMap.containsKey(kanji)) {
+                KanjiHintPO po = kanjiHintsMap.get(kanji);
+                appendToRubyLines(po, rubyList);
+            } else {
+                appendToRubyLines(kanjiInfo, rubyList);
+            }
+        });
+        String ruby = String.join("\n", rubyList);
+
+
+        String lyricsText = parsedLines.stream()
+                .map(it -> lyricsRender.toLyricsLine(it))
+                .collect(Collectors.joining("\n"));
+        var result = ServiceResult.<JapaneseLine>builder()
+                .lines(parsedLines)
+                .lyricsText(lyricsText)
+                .ruby(ruby)
+                .build();
+
+
+        result.getLines().forEach(it -> {
             if (!it.getTagTokens().isEmpty()) {
                 it.setStartTime(
                         Optional.ofNullable(it.getTagTokens().get(0))
@@ -467,6 +532,11 @@ public class JapaneseService extends BaseService<JapaneseLine> {
                 );
             }
         });
+
+        return result;
+    }
+
+    public void workStep2(ServiceResult serviceResult, String name) {
         if (argPackage.outputImage) {
             int space = 5;
             ImageRender.multiDraw(
@@ -495,5 +565,81 @@ public class JapaneseService extends BaseService<JapaneseLine> {
 
 
         }
+    }
+
+    protected KanjiHintPO toKanjiHint(KanjiPronunciationPackage thiz) {
+        var pronounceHints = thiz.getPronunciationMap().entrySet().stream()
+                .map(entry -> {
+                    String pronunciation = entry.getKey();
+                    var rubyLines = entry.getValue().stream()
+                            .map(source -> String.format("%s,[00:00:00],[99:99:99] // from %s",
+                                    pronunciation,
+                                    source.getSourceLyricLineText()
+                            ))
+                            .collect(Collectors.toList());
+                    return PronounceHint.builder()
+                            .pronounce(pronunciation)
+                            .rubyLines(rubyLines)
+                            .build();
+                })
+                .collect(Collectors.toList());
+        return KanjiHintPO.builder()
+                .kanji(thiz.getKanji())
+                .pronounceHints(pronounceHints)
+                .build();
+    }
+
+    protected void appendToRubyLines(KanjiPronunciationPackage bo, List<String> lines) {
+
+        if (bo.getPronunciationMap().size() < 2) {
+            String line = String.format("@Ruby%d=%s,%s",
+                    lines.size() + 1,
+                    bo.getKanji(),
+                    bo.getPronunciationMap().entrySet().iterator().next().getKey()
+            );
+            lines.add(line);
+        } else {
+            bo.getPronunciationMap().forEach((pronunciation, sources) -> {
+                sources.forEach(source -> {
+                    String line = String.format("@Ruby%d=%s,%s",
+                            lines.size() + 1,
+                            bo.getKanji(),
+                            pronunciation
+                    );
+                    if (bo.getPronunciationMap().size() > 1) {
+                        line += String.format(",%s,%s",
+                                source.getStart().toStringTypeNicoKara(),
+                                source.getEnd().toStringTypeNicoKara()
+                        );
+                        if (source.isFromUnknownTimestamp()) {
+                            line += " // from " + source.getSourceLyricLineText();
+                        }
+                    }
+                    lines.add(line);
+                });
+            });
+        }
+    }
+
+    protected void appendToRubyLines(KanjiHintPO po, List<String> lines) {
+        po.getPronounceHints().forEach(pronounceHint -> {
+            pronounceHint.getRubyLines().forEach(rubyLine -> {
+                lines.add(String.format("@Ruby%d=%s,%s",
+                        lines.size() + 1,
+                        po.getKanji(),
+                        rubyLine
+                ));
+            });
+        });
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class ServiceResult {
+        List<JapaneseLine> lines;
+        String lyricsText;
+        String ruby;
     }
 }

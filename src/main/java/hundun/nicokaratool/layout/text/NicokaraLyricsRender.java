@@ -1,10 +1,7 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.text;
 
-import hundun.nicokaratool.japanese.JapaneseService;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.SubtitleTimeSourceType;
-import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
-import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
 
 import java.util.stream.Collectors;
 

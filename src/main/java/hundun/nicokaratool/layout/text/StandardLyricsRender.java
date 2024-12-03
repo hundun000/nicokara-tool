@@ -1,4 +1,4 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.text;
 
 import hundun.nicokaratool.base.lyrics.LyricLine;
 

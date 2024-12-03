@@ -1,4 +1,4 @@
-package hundun.nicokaratool.layout;
+package hundun.nicokaratool.layout.text;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.SubtitleTimeSourceType;
