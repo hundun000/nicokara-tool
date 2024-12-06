@@ -1,7 +1,9 @@
 *.json
 *.txt
-*.kara
+*.kra
 *.png
+*.mp4
+*temp
 !example-*.rootHint.json
 !example-*.txt
 !example-*.kra

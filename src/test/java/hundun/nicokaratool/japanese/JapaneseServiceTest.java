@@ -15,7 +15,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 
-import static hundun.nicokaratool.TableTest.TEST_OUTPUT_FOLDER;
+import static hundun.nicokaratool.Constants.TEST_OUTPUT_FOLDER;
 
 public class JapaneseServiceTest {
     static ObjectMapper objectMapper = new ObjectMapper();
@@ -32,10 +32,7 @@ public class JapaneseServiceTest {
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
         ServiceContext serviceResult = japaneseService.quickStep1(name);
 
-        System.out.println("Lines: ");
-        System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
-
-        japaneseService.workStep2(serviceResult, name);
+        japaneseService.workStep2(serviceResult);
     }
 
     @Test
@@ -45,10 +42,7 @@ public class JapaneseServiceTest {
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
         ServiceContext serviceResult = japaneseService.quickStep1(name);
 
-        System.out.println("Lines: ");
-        System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
-
-        japaneseService.workStep2(serviceResult, name);
+        japaneseService.workStep2(serviceResult);
     }
 
 

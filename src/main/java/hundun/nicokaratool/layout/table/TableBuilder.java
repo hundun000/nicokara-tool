@@ -5,6 +5,7 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
 import hundun.nicokaratool.japanese.JapaneseExtraHint;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
+import hundun.nicokaratool.japanese.TagTokenizer.Timestamp;
 import hundun.nicokaratool.layout.ImageRender;
 import io.github.humbleui.skija.Font;
 import io.github.humbleui.skija.Typeface;
@@ -54,11 +55,11 @@ public class TableBuilder {
         String timeText =
                 Optional.ofNullable(line.getStartTime())
                         .map(it -> it.toLyricsTime())
-                        .orElse(TagToken.unknownLyricsTime())
+                        .orElse(Timestamp.unknownLyricsTime())
                         + " ~ "
                         + Optional.ofNullable(line.getEndTime())
                         .map(it -> it.toLyricsTime())
-                        .orElse(TagToken.unknownLyricsTime())
+                        .orElse(Timestamp.unknownLyricsTime())
                 ;
         CellBuilder lineTimeCell = CellBuilder.builder()
                 .rawText(timeText)

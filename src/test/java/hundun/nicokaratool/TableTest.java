@@ -14,8 +14,6 @@ import java.util.List;
 
 public class TableTest {
 
-    public static final String TEST_OUTPUT_FOLDER = "test-output/";
-
     static ObjectMapper objectMapper = new ObjectMapper();
     static {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -46,13 +44,13 @@ public class TableTest {
         table = tableBuilder.build(ImageRender.face);
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_default_output.png", List.of(table), 5, true);
+        ImageRender.multiDraw(Constants.TEST_OUTPUT_FOLDER + testName + "_default_output.png", List.of(table), 5, true);
 
         tableBuilder.setAlign(Align.right);
         table = tableBuilder.build(ImageRender.face);
         table.setDebug(true);
         System.out.println("table" + (i++) + ": " + objectMapper.writeValueAsString(table));
-        ImageRender.multiDraw(TEST_OUTPUT_FOLDER + testName + "_right_output.png", List.of(table), 5, true);
+        ImageRender.multiDraw(Constants.TEST_OUTPUT_FOLDER + testName + "_right_output.png", List.of(table), 5, true);
     }
 
 

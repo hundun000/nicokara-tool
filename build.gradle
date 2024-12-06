@@ -51,7 +51,6 @@ dependencies {
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
 
-    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.30'
     //compile 'com.alibaba:fastjson:1.1.25'
 
     implementation 'commons-lang:commons-lang:2.6'

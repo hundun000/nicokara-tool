@@ -23,23 +23,12 @@ public class KanjiPronunciationPackage {
         String sourceLyricLineText;
         Timestamp start;
         Timestamp end;
-        boolean fromUnknownTimestamp;
-
-        public static SourceInfo fromUnknownTimestamp(String text) {
-            return SourceInfo.builder()
-                    .sourceLyricLineText(text)
-                    .start(null)
-                    .end(null)
-                    .fromUnknownTimestamp(true)
-                    .build();
-        }
 
         public static SourceInfo fromSubToken(JapaneseSubToken subToken) {
             return SourceInfo.builder()
                     .sourceLyricLineText(subToken.getSource())
-                    .start(subToken.getStart())
-                    .end(subToken.getEnd())
-                    .fromUnknownTimestamp(false)
+                    .start(subToken.isSpecifiedStart() ? subToken.getStart() : null)
+                    .end(subToken.isSpecifiedEnd() ? subToken.getEnd() : null)
                     .build();
         }
     }

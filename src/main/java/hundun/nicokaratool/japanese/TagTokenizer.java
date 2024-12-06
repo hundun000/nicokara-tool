@@ -101,6 +101,51 @@ public class TagTokenizer {
                     millisecond / 10
             );
         }
+
+        public String toFfmpegTime() {
+            return String.format(
+                    "%02d:%02d:%02d.%03d",
+                    0,
+                    minute,
+                    second,
+                    millisecond / 10
+            );
+        }
+
+        public static String unknownLyricsTime() {
+            return "[??:??:??]";
+        }
+
+        public long totalMs() {
+            return (minute * 60 + second) * 1000 + millisecond;
+        }
+
+        public long totalSec() {
+            return (minute * 60 + second);
+        }
+
+        public static Timestamp parse(String text) {
+            if (text.startsWith("[")) {
+                int i = 1;
+                int timeMinute = Integer.parseInt(text.substring(i, i + 2));
+                i += 3;
+                int timeSecond = Integer.parseInt(text.substring(i, i + 2));
+                i += 3;
+                int timeMillisecond;
+                if (text.charAt(i + 2) == ']') {
+                    timeMillisecond = Integer.parseInt(text.substring(i, i + 2)) * 10;
+                } else {
+                    timeMillisecond = Integer.parseInt(text.substring(i, i + 3));
+                }
+                return Timestamp.builder()
+                                .minute(timeMinute)
+                                .second(timeSecond)
+                                .millisecond(timeMillisecond)
+                                .build();
+            }
+
+            return null;
+        }
     }
 
     @AllArgsConstructor
@@ -119,24 +164,8 @@ public class TagTokenizer {
         }
         public static TagToken create(String text, SubtitleTimeSourceType timeSourceType) {
             if (text.startsWith("[")) {
-                int i = 1;
-                int timeMinute = Integer.parseInt(text.substring(i, i + 2));
-                i += 3;
-                int timeSecond = Integer.parseInt(text.substring(i, i + 2));
-                i += 3;
-                int timeMillisecond;
-                if (text.charAt(i + 2) == ']') {
-                    timeMillisecond = Integer.parseInt(text.substring(i, i + 2)) * 10;
-                } else {
-                    timeMillisecond = Integer.parseInt(text.substring(i, i + 3));
-                }
                 return TagToken.builder()
-                        .timestamp(Timestamp.builder()
-                                .minute(timeMinute)
-                                .second(timeSecond)
-                                .millisecond(timeMillisecond)
-                                .build()
-                        )
+                        .timestamp(Timestamp.parse(text))
                         .text(text)
                         .type(TagTokenType.TIME_TAG)
                         .timeSourceType(timeSourceType)
@@ -162,9 +191,7 @@ public class TagTokenizer {
             return timestamp.toLyricsTime();
         }
 
-        public static String unknownLyricsTime() {
-            return "[??:??:??]";
-        }
+
     }
 
 

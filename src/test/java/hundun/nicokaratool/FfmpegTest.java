@@ -1,6 +1,9 @@
 package hundun.nicokaratool;
 
 import hundun.nicokaratool.base.SecretConfig;
+import hundun.nicokaratool.japanese.TagTokenizer.Timestamp;
+import hundun.nicokaratool.layout.VideoRender;
+import hundun.nicokaratool.layout.VideoRender.KeyFrame;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.FFmpegUtils;
@@ -13,10 +16,23 @@ import net.bramp.ffmpeg.progress.ProgressListener;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class FfmpegTest {
-
+    List<KeyFrame> frames = List.of(
+            KeyFrame.builder()
+                    .imagePath(Constants.TEST_INPUT_FOLDER + "avatar1.png")
+                    .inpoint(Timestamp.parse("[00:01.000]"))
+                    .outpoint(Timestamp.parse("[00:05.500]"))
+                    .build(),
+            KeyFrame.builder()
+                    .imagePath(Constants.TEST_INPUT_FOLDER + "avatar2.png")
+                    .inpoint(Timestamp.parse("[00:07.00]"))
+                    .outpoint(Timestamp.parse("[00:09.500]"))
+                    .build()
+    );
+    String prepareFolder = Constants.TEST_OUTPUT_FOLDER + "prepare-temp/";
     FFmpeg ffmpeg;
     FFprobe ffprobe;
 
@@ -74,7 +90,7 @@ public class FfmpegTest {
                 .addExtraArgs("-loop", "1")
                 .overrideOutputFiles(true) // Override the output if it exists
 
-                .addOutput("test-output/avatar.mp4")   // Filename for the destination
+                .addOutput("test-output/avatar1.mp4")   // Filename for the destination
                 //.setFormat("mp4")        // Format is inferred from filename, or can be set
 
 
@@ -111,5 +127,24 @@ public class FfmpegTest {
         });
 
         job.run();
+    }
+
+    @Test
+    public void test_concat() throws IOException {
+        VideoRender.concat(
+                prepareFolder,
+                frames
+        );
+    }
+
+    @Test
+    public void test_prepare() throws IOException {
+        VideoRender.prepare(prepareFolder, frames);
+    }
+
+    @Test
+    public void test_addAudio() throws IOException {
+        String outFile = Constants.TEST_OUTPUT_FOLDER + "out.mp4";
+        VideoRender.addAudio(prepareFolder, outFile, Constants.TEST_INPUT_FOLDER + "loop.wav");
     }
 }

@@ -37,7 +37,7 @@ public class JapaneseRunner {
             System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
         }
 
-        service.workStep2(serviceResult, name);
+        service.workStep2(serviceResult);
 
         System.out.println("done.");
     }
