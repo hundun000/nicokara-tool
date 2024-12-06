@@ -1,7 +1,7 @@
 package hundun.nicokaratool.japanese;
 
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.ServiceResult;
+import hundun.nicokaratool.japanese.JapaneseService.ServiceContext;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,10 +31,10 @@ public class JapaneseRunner {
                 .findAny()
                 .isPresent();
         System.out.println("using: " + name + " ...");
-        ServiceResult serviceResult = service.workStep1(name);
+        ServiceContext serviceResult = service.quickStep1(name);
         if (debug) {
             System.out.println("Lines: ");
-            System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
+            System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
         }
 
         service.workStep2(serviceResult, name);

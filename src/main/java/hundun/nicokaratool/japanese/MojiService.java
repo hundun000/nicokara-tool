@@ -2,7 +2,6 @@ package hundun.nicokaratool.japanese;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import hundun.nicokaratool.base.BaseService;
 import hundun.nicokaratool.japanese.JapaneseExtraHint.TranslationResultItem;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;

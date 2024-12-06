@@ -1,5 +1,6 @@
 package hundun.nicokaratool.japanese;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.base.KanjiHintPO;
@@ -17,9 +18,9 @@ import java.util.stream.Collectors;
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
-import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.TagTokenType;
+import hundun.nicokaratool.japanese.TagTokenizer.Timestamp;
 import hundun.nicokaratool.layout.ImageRender;
 import hundun.nicokaratool.layout.text.ILyricsRender;
 import hundun.nicokaratool.layout.text.NicokaraLyricsRender;
@@ -29,6 +30,7 @@ import hundun.nicokaratool.remote.GoogleServiceImpl;
 import hundun.nicokaratool.util.Utils;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +72,7 @@ public class JapaneseService {
         boolean debugImage;
         boolean outputNicokara;
         boolean outputVideo;
-
+        boolean outputLogFile;
         public static WorkArgPackage getDefault() {
             return WorkArgPackage.builder()
                     .withTranslation(false)
@@ -85,6 +87,7 @@ public class JapaneseService {
                     .outputImage(true)
                     .debugImage(true)
                     .outputVideo(true)
+                    .outputLogFile(true)
                     .build();
         }
     }
@@ -108,7 +111,10 @@ public class JapaneseService {
          * 既其所属的上一层的surface
          */
         String source;
-        
+        Timestamp start;
+        boolean specifiedStart;
+        Timestamp end;
+        boolean specifiedEnd;
         public boolean typeKanji() {
             return kanji != null;
         }
@@ -402,6 +408,20 @@ public class JapaneseService {
 
         results.forEach(it -> handleOneLineStep12(it));
 
+        results.forEach(line -> {
+            for (int i = 0; i  < line.getParsedTokens().size(); i ++) {
+                var parsedToken = line.getParsedTokens().get(i);
+                for (int j = 0; j < parsedToken.subTokens.size(); j++) {
+                    var subToken = parsedToken.subTokens.get(j);
+                    var findSubTokenTimestampStart = findSubTokenTimestamp(line, parsedToken, subToken, i, j, true, true);
+                    subToken.start = findSubTokenTimestampStart.getLeft();
+                    subToken.specifiedStart = findSubTokenTimestampStart.getRight();
+                    var findSubTokenTimestampEnd = findSubTokenTimestamp(line, parsedToken, subToken, i, j, false, true);
+                    subToken.end = findSubTokenTimestampEnd.getLeft();
+                    subToken.specifiedEnd = findSubTokenTimestampEnd.getRight();
+                }
+            }
+        });
         return results;
     }
 
@@ -433,25 +453,33 @@ public class JapaneseService {
     protected Map<String, KanjiPronunciationPackage> calculateKanjiPronunciationPackageMap(List<JapaneseLine> lines) {
         Map<String, KanjiPronunciationPackage> map = new HashMap<>();
         lines.forEach(line -> {
-            line.getParsedTokens().stream()
-                    .forEach(parsedToken -> {
-                        parsedToken.subTokens.forEach(subToken -> {
-                            if (subToken.typeKanji()) {
-                                if (!map.containsKey(subToken.kanji)) {
-                                    map.put(subToken.kanji, KanjiPronunciationPackage.builder()
-                                            .kanji(subToken.kanji)
-                                            .pronunciationMap(new HashMap<>())
-                                            .build());
-                                }
-                                mergeNeedHintMap(map.get(subToken.kanji), subToken);
-                            }
-                        });
-                    });
+            for (int i = 0; i  < line.getParsedTokens().size(); i ++) {
+                var parsedToken = line.getParsedTokens().get(i);
+                for (int j = 0; j < parsedToken.subTokens.size(); j++) {
+                    var subToken = parsedToken.subTokens.get(j);
+                    if (subToken.typeKanji()) {
+                        if (!map.containsKey(subToken.kanji)) {
+                            map.put(subToken.kanji, KanjiPronunciationPackage.builder()
+                                    .kanji(subToken.kanji)
+                                    .pronunciationMap(new HashMap<>())
+                                    .build());
+                        }
+                        mergeNeedHintMap(map.get(subToken.kanji), line, parsedToken, subToken, i, j);
+                    }
+                }
+            }
         });
         return map;
     }
 
-    private void mergeNeedHintMap(KanjiPronunciationPackage thiz, JapaneseSubToken subToken) {
+    private void mergeNeedHintMap(
+            KanjiPronunciationPackage thiz,
+            JapaneseLine line,
+            JapaneseParsedToken parsedToken,
+            JapaneseSubToken subToken,
+            int parsedTokenIndex,
+            int subTokenIndex
+    ) {
         String pronunciation = subToken.getFurigana();
         if (!thiz.getPronunciationMap().containsKey(pronunciation)) {
             thiz.getPronunciationMap().put(pronunciation, new ArrayList<>());
@@ -462,9 +490,89 @@ public class JapaneseService {
     }
 
 
-    public ServiceResult workStep1(String name) throws IOException {
+    /**
+     * 起点为line中第parsedTokenIndex（不含）个JapaneseParsedToken的（第subTokenIndex（不含）个subToken/不限）向（左/右）寻找第一个遇到的Timestamp
+     */
+    private Pair<Timestamp, Boolean> findSubTokenTimestamp(
+            JapaneseLine line,
+            JapaneseParsedToken parsedToken,
+            JapaneseSubToken subToken,
+            int parsedTokenIndex,
+            Integer subTokenIndex,
+            boolean findLeft,
+            boolean firstTimeRecursion
+    ) {
+            if (findLeft) {
+                Integer beforePartLength = Optional.ofNullable(subTokenIndex)
+                        .map(subTokenIndexIt -> {
+                            String beforePart = parsedToken.getSubTokens().stream()
+                                    .limit(subTokenIndexIt)
+                                    .map(it -> it.getSurface())
+                                    .collect(Collectors.joining());
+                            return beforePart.length();
+                        })
+                        .orElse(null);
+                // 排序后取最后一个
+                var entryOptional = parsedToken.getDetailedTimeMap().entrySet().stream()
+                        .filter(it -> beforePartLength == null || it.getKey() <= beforePartLength)
+                        .sorted((o1, o2) -> - Integer.compare(o1.getKey(), o2.getKey()))
+                        .findFirst();
+                if (entryOptional.isPresent()) {
+                    var value = entryOptional.get().getValue();
+                    boolean perfectMatch = firstTimeRecursion && Objects.equals(entryOptional.get().getKey(), beforePartLength);
+                    return Pair.of(value.get(value.size() - 1).getTimestamp(), perfectMatch);
+                } else {
+                    return findSubTokenTimestamp(line, parsedToken, subToken, parsedTokenIndex - 1, null, findLeft, false);
+                }
+            } else {
+                Integer beforePartLength = Optional.ofNullable(subTokenIndex)
+                        .map(subTokenIndexIt -> {
+                            String beforePart = parsedToken.getSubTokens().stream()
+                                    .limit(subTokenIndexIt + 1)
+                                    .map(it -> it.getSurface())
+                                    .collect(Collectors.joining());
+                            return beforePart.length();
+                        })
+                        .orElse(null);
+                // 排序后取最前一个
+                var entryOptional = parsedToken.getDetailedTimeMap().entrySet().stream()
+                        .filter(it -> beforePartLength == null || it.getKey() >= beforePartLength)
+                        .sorted((o1, o2) -> Integer.compare(o1.getKey(), o2.getKey()))
+                        .findFirst();
+                if (entryOptional.isPresent()) {
+                    var value = entryOptional.get().getValue();
+                    boolean perfectMatch = firstTimeRecursion && Objects.equals(entryOptional.get().getKey(), beforePartLength);
+                    return Pair.of(value.get(0).getTimestamp(), perfectMatch);
+                } else {
+                    return findSubTokenTimestamp(line, parsedToken, subToken, parsedTokenIndex + 1, null, findLeft, false);
+                }
+            }
+    }
 
-        boolean needCreateRootHint = false;
+    public void workJapaneseLearningVideo(String name) {
+        File tempFolderFile = new File(RUNTIME_IO_FOLDER + name + "_temp" + File.separator);
+
+    }
+
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class ServiceContext {
+        // ---- step 0 ----
+        File rootHintFile;
+        List<String> plainLines;
+        RootHint rootHint;
+        boolean needNewRootHint;
+        // ---- step 1 ----
+        List<JapaneseLine> parsedLines;
+        Map<String, KanjiPronunciationPackage> packageMap;
+        String lyricsText;
+        String ruby;
+    }
+
+    private ServiceContext serviceContext(String name) throws IOException {
+
+        boolean saveRootHint = false;
 
         List<String> lines = Utils.readAllLines(RUNTIME_IO_FOLDER + name + ".txt");
         RootHint rootHint;
@@ -472,53 +580,44 @@ public class JapaneseService {
         if (rootHintFile.exists()) {
             rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
         } else {
-            needCreateRootHint = true;
+            saveRootHint = true;
             rootHint = null;
         }
 
-        List<JapaneseLine> parsedLines = toParsedLines(lines, rootHint);
-        Map<String, KanjiPronunciationPackage> packageMap = calculateKanjiPronunciationPackageMap(parsedLines);
+        return ServiceContext.builder()
+                .needNewRootHint(saveRootHint)
+                .plainLines(lines)
+                .rootHint(rootHint)
+                .rootHintFile(rootHintFile)
+                .build();
+    }
 
-        if (needCreateRootHint) {
-            List<KanjiHintPO> kanjiHintPOS = packageMap.values().stream()
+
+    public ServiceContext quickStep1(String name) throws IOException {
+        ServiceContext serviceContext = serviceContext(name);
+        workStep1Core(serviceContext);
+        return serviceContext;
+    }
+
+    public void workStep1Core(ServiceContext serviceContext) throws IOException {
+
+        List<JapaneseLine> parsedLines = toParsedLines(serviceContext.plainLines, serviceContext.rootHint);
+        serviceContext.parsedLines = parsedLines;
+        serviceContext.packageMap = calculateKanjiPronunciationPackageMap(parsedLines);
+
+        if (serviceContext.needNewRootHint) {
+            List<KanjiHintPO> kanjiHintPOS = serviceContext.packageMap.values().stream()
                     .filter(it -> it.getPronunciationMap().size() > 1)
                     .map(it -> toKanjiHint(it))
                     .collect(Collectors.toList());
-            rootHint = RootHint.builder()
+            serviceContext.rootHint = RootHint.builder()
                     .kanjiHints(kanjiHintPOS)
                     .nluDisallowHints(new ArrayList<>(0))
                     .build();
-            fileObjectMapper.writeValue(rootHintFile, rootHint);
+            fileObjectMapper.writeValue(serviceContext.rootHintFile, serviceContext.rootHint);
         }
 
-
-        Map<String, KanjiHintPO> kanjiHintsMap = rootHint.getKanjiHints().stream()
-                .collect(Collectors.toMap(
-                        it -> it.getKanji(),
-                        it -> it));
-        List<String> rubyList = new ArrayList<>();
-        packageMap.forEach((kanji, kanjiInfo) -> {
-            if (kanjiHintsMap.containsKey(kanji)) {
-                KanjiHintPO po = kanjiHintsMap.get(kanji);
-                appendToRubyLines(po, rubyList);
-            } else {
-                appendToRubyLines(kanjiInfo, rubyList);
-            }
-        });
-        String ruby = String.join("\n", rubyList);
-
-
-        String lyricsText = parsedLines.stream()
-                .map(it -> lyricsRender.toLyricsLine(it))
-                .collect(Collectors.joining("\n"));
-        var result = ServiceResult.<JapaneseLine>builder()
-                .lines(parsedLines)
-                .lyricsText(lyricsText)
-                .ruby(ruby)
-                .build();
-
-
-        result.getLines().forEach(it -> {
+        parsedLines.forEach(it -> {
             if (!it.getTagTokens().isEmpty()) {
                 it.setStartTime(
                         Optional.ofNullable(it.getTagTokens().get(0))
@@ -533,15 +632,41 @@ public class JapaneseService {
             }
         });
 
-        return result;
+        Map<String, KanjiHintPO> kanjiHintsMap = serviceContext.rootHint.getKanjiHints().stream()
+                .collect(Collectors.toMap(
+                        it -> it.getKanji(),
+                        it -> it));
+        List<String> rubyList = new ArrayList<>();
+        serviceContext.packageMap.forEach((kanji, kanjiInfo) -> {
+            if (kanjiHintsMap.containsKey(kanji)) {
+                KanjiHintPO po = kanjiHintsMap.get(kanji);
+                appendToRubyLines(po, rubyList);
+            } else {
+                appendToRubyLines(kanjiInfo, rubyList);
+            }
+        });
+        serviceContext.ruby = String.join("\n", rubyList);
+
+        serviceContext.lyricsText = serviceContext.parsedLines.stream()
+                .map(it -> lyricsRender.toLyricsLine(it))
+                .collect(Collectors.joining("\n"));
     }
 
-    public void workStep2(ServiceResult serviceResult, String name) {
+    public void workStep2(ServiceContext serviceContext, String name) {
+        if (argPackage.outputLogFile) {
+            try {
+                String logText = fileObjectMapper.writeValueAsString(serviceContext.getParsedLines());
+                Utils.writeAllLines(RUNTIME_IO_FOLDER + name + ".log.json", logText);
+            } catch (JsonProcessingException e) {
+                log.error("bad outputLogFile", e);
+            }
+        }
+
         if (argPackage.outputImage) {
             int space = 5;
             ImageRender.multiDraw(
                     RUNTIME_IO_FOLDER + name + "_all_output.png",
-                    serviceResult.getLines().stream()
+                    serviceContext.getParsedLines().stream()
                             .map(line -> {
                                 JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
                                         .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
@@ -558,7 +683,7 @@ public class JapaneseService {
             );
         }
         if (argPackage.outputNicokara) {
-            String kraFileText = serviceResult.getLyricsText() + "\n" + serviceResult.getRuby();
+            String kraFileText = serviceContext.getLyricsText() + "\n" + serviceContext.getRuby();
             Utils.writeAllLines(RUNTIME_IO_FOLDER + name + ".kra", kraFileText);
         }
         if (argPackage.outputVideo) {
@@ -608,8 +733,8 @@ public class JapaneseService {
                     );
                     if (bo.getPronunciationMap().size() > 1) {
                         line += String.format(",%s,%s",
-                                source.getStart().toStringTypeNicoKara(),
-                                source.getEnd().toStringTypeNicoKara()
+                                source.getStart().toLyricsTime(),
+                                source.getEnd().toLyricsTime()
                         );
                         if (source.isFromUnknownTimestamp()) {
                             line += " // from " + source.getSourceLyricLineText();
@@ -633,13 +758,4 @@ public class JapaneseService {
         });
     }
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static class ServiceResult {
-        List<JapaneseLine> lines;
-        String lyricsText;
-        String ruby;
-    }
 }

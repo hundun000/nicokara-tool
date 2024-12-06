@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
-import hundun.nicokaratool.japanese.JapaneseService.ServiceResult;
+import hundun.nicokaratool.japanese.JapaneseService.ServiceContext;
 import hundun.nicokaratool.japanese.JapaneseService.WorkArgPackage;
 import hundun.nicokaratool.layout.text.DebugLyricsRender;
 import hundun.nicokaratool.layout.ImageRender;
@@ -30,10 +30,10 @@ public class JapaneseServiceTest {
         String name = "example-japanese-long";
 
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
-        ServiceResult serviceResult = japaneseService.workStep1(name);
+        ServiceContext serviceResult = japaneseService.quickStep1(name);
 
         System.out.println("Lines: ");
-        System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
+        System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
 
         japaneseService.workStep2(serviceResult, name);
     }
@@ -43,10 +43,10 @@ public class JapaneseServiceTest {
         String name = "example-japanese-short";
 
         japaneseService.argPackage = WorkArgPackage.getAllFeatures();
-        ServiceResult serviceResult = japaneseService.workStep1(name);
+        ServiceContext serviceResult = japaneseService.quickStep1(name);
 
         System.out.println("Lines: ");
-        System.out.println(objectMapper.writeValueAsString(serviceResult.getLines()));
+        System.out.println(objectMapper.writeValueAsString(serviceResult.getParsedLines()));
 
         japaneseService.workStep2(serviceResult, name);
     }
@@ -72,15 +72,17 @@ public class JapaneseServiceTest {
     public void testTagTokenizer() throws JsonProcessingException {
         String text = "[00:22:90]大切な[00:24:03]思い[00:24:94][00:24:95]出を[00:25:51]";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
-        System.out.println(objectMapper.writeValueAsString(line));
+        System.out.println(text);
         System.out.println(DebugLyricsRender.INSTANCE.toLyricsLine(line));
+        System.out.println(objectMapper.writeValueAsString(line));
     }
 
     @Test
     public void testTagTokenizer2() throws JsonProcessingException {
         String text = "まだまだ言い足りないでしょ";
         JapaneseLine line = japaneseService.toParsedLines(List.of(text), null).get(0);
-        System.out.println(objectMapper.writeValueAsString(line));
+        System.out.println(text);
         System.out.println(DebugLyricsRender.INSTANCE.toLyricsLine(line));
+        System.out.println(objectMapper.writeValueAsString(line));
     }
 }

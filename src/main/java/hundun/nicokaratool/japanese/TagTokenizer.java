@@ -79,13 +79,38 @@ public class TagTokenizer {
     @AllArgsConstructor
     @Builder
     @Data
+    public static class Timestamp {
+        int minute;
+        int second;
+        int millisecond;
+
+        public String toLyricsTime() {
+            return String.format(
+                    "[%02d:%02d:%02d]",
+                    minute,
+                    second,
+                    millisecond / 10
+            );
+        }
+
+        public String toLyricsTime(boolean start) {
+            return String.format(
+                    start ? "([%02d:%02d:%02d]" : "[%02d:%02d:%02d])",
+                    minute,
+                    second,
+                    millisecond / 10
+            );
+        }
+    }
+
+    @AllArgsConstructor
+    @Builder
+    @Data
     public static class TagToken {
         String text;
 
         int timeOffset;
-        int timeMinute;
-        int timeSecond;
-        int timeMillisecond;
+        Timestamp timestamp;
         TagTokenType type;
         SubtitleTimeSourceType timeSourceType;
 
@@ -106,9 +131,12 @@ public class TagTokenizer {
                     timeMillisecond = Integer.parseInt(text.substring(i, i + 3));
                 }
                 return TagToken.builder()
-                        .timeMinute(timeMinute)
-                        .timeSecond(timeSecond)
-                        .timeMillisecond(timeMillisecond)
+                        .timestamp(Timestamp.builder()
+                                .minute(timeMinute)
+                                .second(timeSecond)
+                                .millisecond(timeMillisecond)
+                                .build()
+                        )
                         .text(text)
                         .type(TagTokenType.TIME_TAG)
                         .timeSourceType(timeSourceType)
@@ -131,12 +159,7 @@ public class TagTokenizer {
         }
 
         public String toLyricsTime() {
-            return String.format(
-                    "[%02d:%02d:%02d]",
-                    timeMinute,
-                    timeSecond,
-                    timeMillisecond / 10
-            );
+            return timestamp.toLyricsTime();
         }
 
         public static String unknownLyricsTime() {

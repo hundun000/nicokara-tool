@@ -2,6 +2,7 @@ package hundun.nicokaratool.layout.text;
 
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.SubtitleTimeSourceType;
+import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 
 import java.util.stream.Collectors;
 
@@ -11,30 +12,15 @@ public class DebugLyricsRender implements ILyricsRender<JapaneseLine> {
     @Override
     public String toLyricsLine(JapaneseLine japaneseLine) {
         return japaneseLine.getParsedTokens().stream()
-                .map(it -> {
-                    StringBuilder collecting = new StringBuilder();
-                    for (int i = 0; i < it.getSurface().length(); i++) {
-                        char c = it.getSurface().charAt(i);
-                        if (it.getDetailedTimeMap() != null) {
-                            if (it.getDetailedTimeMap().containsKey(i)) {
-                                it.getDetailedTimeMap().get(i).forEach(time -> {
-                                    if (time.getTimeSourceType() == SubtitleTimeSourceType.SPECIFIED_COPY) {
-                                        collecting.append("~");
-                                    }
-                                    collecting.append(time.toLyricsTime());
-                                });
-                            }
-                        }
-                        collecting.append(c);
-                    }
-                    if (it.getDetailedTimeMap() != null) {
-                        if (it.getDetailedTimeMap().containsKey(it.getSurface().length())) {
-                            it.getDetailedTimeMap().get(it.getSurface().length()).forEach(time -> {
-                                collecting.append(time.toLyricsTime());
-                            });
-                        }
-                    }
-                    return collecting;
+                .map(parsedToken -> {
+                    return parsedToken.getSubTokens().stream()
+                            .map(subToken -> {
+                                return  (subToken.isSpecifiedStart() ? subToken.getStart().toLyricsTime(true) : "")
+                                            + subToken.getSurface()
+                                            + (subToken.isSpecifiedEnd() ? subToken.getEnd().toLyricsTime(false) : "")
+                                            ;
+                            })
+                            .collect(Collectors.joining());
                 })
                 .collect(Collectors.joining()) + "\n";
     }
