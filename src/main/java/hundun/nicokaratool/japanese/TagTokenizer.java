@@ -14,9 +14,9 @@ public class TagTokenizer {
 
 
     public List<TagToken> parse(String text) {
-        Pattern pattern1 = Pattern.compile("\\[[0-9]{2}:[0-9]{2}:[0-9]{2}]");
-        Matcher matcher1 = pattern1.matcher(text);
         List<String> absoluteTimeTagParts = new ArrayList<>();
+        Pattern pattern1 = Pattern.compile("\\[[0-9]{2}:[0-9]{2}(:|.)[0-9]{2,3}]");
+        Matcher matcher1 = pattern1.matcher(text);
         while (matcher1.find()) {
             absoluteTimeTagParts.add(matcher1.group());
         }

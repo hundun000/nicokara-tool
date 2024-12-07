@@ -141,13 +141,13 @@ public class ImageRender {
             surfaceHeight++;
         }
         File folderFile = new File(folder);
-        if (!folderFile.exists()) {
-            folderFile.mkdirs();
-        }
+        folderFile.delete();
+        folderFile.mkdirs();
 
         List<java.nio.file.Path> paths = new ArrayList<>();
         for (int i = 0; i < tableList.size(); i++) {
             var table = tableList.get(i);
+            table.setX((surfaceWidth - table.getRightBound()) / 2);
             Surface surface = Surface.makeRasterN32Premul(surfaceWidth, surfaceHeight);
 
             Canvas canvas = surface.getCanvas();

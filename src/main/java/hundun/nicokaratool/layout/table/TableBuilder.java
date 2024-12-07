@@ -4,12 +4,10 @@ import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseSubToken;
 import hundun.nicokaratool.japanese.JapaneseExtraHint;
-import hundun.nicokaratool.japanese.TagTokenizer.TagToken;
 import hundun.nicokaratool.japanese.TagTokenizer.Timestamp;
-import hundun.nicokaratool.layout.ImageRender;
-import io.github.humbleui.skija.Font;
 import io.github.humbleui.skija.Typeface;
 import lombok.*;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +16,8 @@ import java.util.stream.Collectors;
 
 public class TableBuilder {
 
-    static final int KANJI_FONT_SIZE = 20;
-    static final int KANA_FONT_SIZE = 10;
+    int kanjiFontSize;
+    int kanaFontSize;
     @Setter
     Integer align;
     @Setter
@@ -28,7 +26,8 @@ public class TableBuilder {
     Integer yPreferredSpace;
     @Getter
     final CellBuilder dummyRootCell;
-
+    @Setter
+    Integer singleContentMaxWidth;
     public TableBuilder() {
         this.dummyRootCell =  CellBuilder.builder()
                 .rawText("")
@@ -43,12 +42,20 @@ public class TableBuilder {
     }
 
     public static TableBuilder fromJapaneseLine(JapaneseLine line, JapaneseExtraHint japaneseExtraHint) {
+        return fromJapaneseLine(line, japaneseExtraHint, 20, 10);
+    }
+
+    public static TableBuilder fromJapaneseLine(JapaneseLine line, JapaneseExtraHint japaneseExtraHint, int kanjiFontSize, int kanaFontSize) {
+        TableBuilder table = new TableBuilder();
+        table.kanjiFontSize = kanjiFontSize;
+        table.kanaFontSize = kanaFontSize;
+
         CellBuilder chineseRootCell = CellBuilder.builder()
                 .rawText(line.getChinese())
-                .fontSize(KANJI_FONT_SIZE)
+                .fontSize(kanjiFontSize)
                 .belowCells(
                         line.getParsedTokens().stream()
-                                .map(it -> cellFromToken(it, japaneseExtraHint))
+                                .map(it -> table.cellFromToken(it, japaneseExtraHint))
                                 .collect(Collectors.toList())
                 )
                 .build();
@@ -63,23 +70,22 @@ public class TableBuilder {
                 ;
         CellBuilder lineTimeCell = CellBuilder.builder()
                 .rawText(timeText)
-                .fontSize(KANJI_FONT_SIZE)
+                .fontSize(kanjiFontSize)
                 .belowCells(
                         List.of(chineseRootCell)
                 )
                 .build();
-        TableBuilder table = new TableBuilder();
         table.getDummyRootCell().getBelowCells().add(lineTimeCell);
         return table;
     }
 
-    public static CellBuilder cellFromToken(JapaneseParsedToken parsedToken, JapaneseExtraHint japaneseExtraHint) {
+    private CellBuilder cellFromToken(JapaneseParsedToken parsedToken, JapaneseExtraHint japaneseExtraHint) {
         CellBuilder current;
         // 实际图片位置：按代码构造顺序，从下至上
         // layer cellFromSubToken
         current = CellBuilder.builder()
                 .rawText(parsedToken.getPartOfSpeechLevel1())
-                .fontSize(KANJI_FONT_SIZE)
+                .fontSize(kanjiFontSize)
                 .belowCells(
                         parsedToken.getSubTokens().stream()
                                 .map(it -> cellFromSubToken(it))
@@ -94,7 +100,7 @@ public class TableBuilder {
                                 )
                                 .orElse("")
                 )
-                .fontSize(KANJI_FONT_SIZE)
+                .fontSize(kanjiFontSize)
                 .belowCells(
                         List.of(current)
                 )
@@ -106,7 +112,7 @@ public class TableBuilder {
                                 .map(it -> it.getZhDetail())
                                 .orElse("")
                 )
-                .fontSize(KANJI_FONT_SIZE)
+                .fontSize(kanjiFontSize)
                 .belowCells(
                         List.of(current)
                 )
@@ -150,15 +156,15 @@ public class TableBuilder {
 
     }
 
-    public static CellBuilder cellFromSubToken(JapaneseSubToken subToken) {
+    private CellBuilder cellFromSubToken(JapaneseSubToken subToken) {
         if (subToken.getKanji() != null) {
             CellBuilder upCell = CellBuilder.builder()
                     .rawText(subToken.getFurigana())
-                    .fontSize(KANA_FONT_SIZE)
+                    .fontSize(kanaFontSize)
                     .build();
             CellBuilder downCell = CellBuilder.builder()
                     .rawText(subToken.getKanji())
-                    .fontSize(KANJI_FONT_SIZE)
+                    .fontSize(kanjiFontSize)
                     .build();
             upCell.setBelowCells(List.of(downCell));
             return upCell;
@@ -169,7 +175,7 @@ public class TableBuilder {
                     .build();
             CellBuilder downCell = CellBuilder.builder()
                     .rawText(subToken.getSurface())
-                    .fontSize(KANJI_FONT_SIZE)
+                    .fontSize(kanjiFontSize)
                     .build();
             upCell.setBelowCells(List.of(downCell));
             return upCell;
@@ -187,6 +193,9 @@ public class TableBuilder {
         }
         if (this.yPreferredSpace != null) {
             table.setYPreferredSpace(this.yPreferredSpace);
+        }
+        if (this.singleContentMaxWidth != null) {
+            table.setSingleContentMaxWidth(this.singleContentMaxWidth);
         }
         table.setDummyRootCell(dummyRootCell);
 

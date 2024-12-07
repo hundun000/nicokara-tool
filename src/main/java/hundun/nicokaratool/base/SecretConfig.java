@@ -21,7 +21,7 @@ public class SecretConfig {
         try {
             JsonNode secretFile = objectMapper.readTree(new File("data/Secret/secret.json"));
             gptAuthorization = secretFile.get("gptKey").asText();
-            proxyConfig = secretFile.get("proxy");
+            proxyConfig = secretFile.get("proxyConfig");
             ffmpegConfig = secretFile.get("ffmpegConfig");
         } catch (IOException e) {
             log.error("bad secretFile read:", e);

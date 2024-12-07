@@ -40,6 +40,8 @@ public class VideoRender {
     public static class KeyFrame {
         String imagePath;
         String videoPath;
+        Long durationLast;
+        Long durationNext;
         Timestamp inpoint;
         Timestamp outpoint;
     }
@@ -49,6 +51,17 @@ public class VideoRender {
 
         for (int i = 0; i < frames.size(); i++) {
             var frame = frames.get(i);
+            long durationMs;
+            if (frame.getDurationLast() == null) {
+                // 首句片段时长：延长前奏
+                durationMs = frame.getOutpoint().totalMs();
+            } else if (frame.getDurationNext() == null) {
+                // 尾句片段时长：延长前一间隔的一半
+                durationMs = frame.getOutpoint().totalMs() - frame.getInpoint().totalMs() + frame.getDurationLast() / 2;
+            } else {
+                // 一般片段时长：延长前后间隔的一半
+                durationMs = frame.getOutpoint().totalMs() - frame.getInpoint().totalMs() + (frame.getDurationLast() + frame.getDurationNext()) / 2;
+            }
             String outPath = prepareFolder + i + ".mp4";
             FFmpegBuilder builder = new FFmpegBuilder()
                     .addInput(frame.getImagePath())
@@ -65,7 +78,7 @@ public class VideoRender {
                     .addExtraArgs("-c:v", "libx264")
                     //.setVideoCodec("libx264")
 
-                    .setDuration(frame.getOutpoint().totalMs() - frame.getInpoint().totalMs(), TimeUnit.MILLISECONDS)
+                    .setDuration(durationMs, TimeUnit.MILLISECONDS)
                     .done()
                     ;
 
@@ -129,8 +142,7 @@ public class VideoRender {
 
                 .addOutput(outFile)   // Filename for the destination
                 //.setFormat("mp4")        // Format is inferred from filename, or can be set
-
-
+                .addExtraArgs("-shortest")
                 .addExtraArgs("-c:v", "copy")
                 .addExtraArgs("-c:a", "aac")
                 //.setVideoCodec("libx264")

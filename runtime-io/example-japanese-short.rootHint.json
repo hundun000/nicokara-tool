@@ -1,7 +1,10 @@
 {
-  "translationCacheMap": {
-    "大切な思い出を": "重要的回忆"
+  "translationCacheMap" : {
+    "きらきら光る": "闪光",
+    "お空の星よ": "天空之星",
+    "まばたきしては": "眨眼",
+    "みんなを見てる": "看着每个人"
   },
-  "kanjiHints" : [],
-  "nluDisallowHints" : null
+  "kanjiHints" : [ ],
+  "nluDisallowHints" : [ ]
 }

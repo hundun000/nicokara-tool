@@ -16,10 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Cell {
-    /**
-     * 不含xPreferredSpace的ContextMaxWidth
-     */
-    public static final int defaultSingleContentMaxWidth = 150;
+
     @JsonIgnore
     @ToString.Exclude
     Table table;
@@ -60,7 +57,7 @@ public class Cell {
         Font font = new Font(typeface, fontSize);
         this.table = table;
         this.layer = aboveCell == null ? 0 : aboveCell.getLayer() + 1;
-        int preferredWidthFromRawText = Math.min((rawText.length() * fontSize), defaultSingleContentMaxWidth);
+        int preferredWidthFromRawText = Math.min((rawText.length() * fontSize), table.getSingleContentMaxWidth());
         if (belowCells != null) {
             belowCells.forEach(it -> it.update(typeface, table, this));
             int belowCellsSumPreferredWidth = belowCells.stream()

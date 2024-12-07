@@ -17,6 +17,10 @@ public class Table {
     int align = Align.center;
     int xPreferredSpace = 5;
     int yPreferredSpace = 5;
+    /**
+     * 不含xPreferredSpace的ContextMaxWidth
+     */
+    int singleContentMaxWidth = 150;
     boolean debug;
 
     Map<Integer, Integer> layerCellsMaxPreferredHeightMap = new HashMap<>();

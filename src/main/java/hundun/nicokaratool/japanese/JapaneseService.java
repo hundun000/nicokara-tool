@@ -696,7 +696,9 @@ public class JapaneseService {
             Utils.writeAllLines(RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".kra", kraFileText);
         }
         if (argPackage.outputVideo) {
-            int space = 5;
+            int space = 10;
+            int kanjiFontSize = 100;
+            int kanaFontSize = 50;
             String prepareFolder = RUNTIME_IO_FOLDER + serviceContext.getTitle() + "_videoTemp/";
             List<Path> paths = ImageRender.multiDrawToFolder(
                     prepareFolder,
@@ -706,9 +708,10 @@ public class JapaneseService {
                                 JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
                                         .parsedTokensIndexToMojiHintMap(mojiService.getMojiHintMap(line))
                                         .build();
-                                TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint);
+                                TableBuilder tableBuilder = TableBuilder.fromJapaneseLine(line, japaneseExtraHint, kanjiFontSize, kanaFontSize);
                                 tableBuilder.setXPreferredSpace(space);
                                 tableBuilder.setYPreferredSpace(space);
+                                tableBuilder.setSingleContentMaxWidth(kanjiFontSize * 10);
                                 Table table = tableBuilder.build(ImageRender.face);
                                 return table;
                             })
@@ -727,6 +730,17 @@ public class JapaneseService {
                         .outpoint(line.getEndTime().getTimestamp())
                         .build();
                 frames.add(res);
+            }
+            for (int i = 0; i < frames.size(); i++) {
+                var frame = frames.get(i);
+                if (i - 1 >= 0) {
+                    var last = frames.get(i - 1);
+                    frame.setDurationLast(frame.getInpoint().totalMs() - last.getOutpoint().totalMs());
+                }
+                if (i + 1 < frames.size()) {
+                    var next = frames.get(i + 1);
+                    frame.setDurationNext(next.getInpoint().totalMs() - frame.getOutpoint().totalMs());
+                }
             }
             VideoRender.prepare(prepareFolder, frames);
             log.info("outputVideo prepare done.");
