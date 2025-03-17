@@ -3,6 +3,7 @@ package hundun.nicokaratool.japanese;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import hundun.nicokaratool.MainRunner;
 import hundun.nicokaratool.base.KanjiHintPO;
 import hundun.nicokaratool.base.KanjiHintPO.PronounceHint;
 import hundun.nicokaratool.base.KanjiPronunciationPackage;
@@ -42,8 +43,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @Slf4j
 public class JapaneseService {
-    public static final String CACHE_FOLDER = "data/caches/";
-    public static final String RUNTIME_IO_FOLDER = "runtime-io/";
     protected ObjectMapper normalObjectMapper = new ObjectMapper();
     protected ObjectMapper fileObjectMapper = new ObjectMapper();
     public static ObjectMapper objectMapper = new ObjectMapper();
@@ -59,7 +58,7 @@ public class JapaneseService {
     TagTokenizer tagTokenizer = new TagTokenizer();
     GoogleServiceImpl googleService = new GoogleServiceImpl();
 
-    protected JapaneseService() {
+    public JapaneseService() {
         this.lyricsRender = new NicokaraLyricsRender();
         fileObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
         mojiService.loadCache();
@@ -95,6 +94,7 @@ public class JapaneseService {
         }
     }
 
+    @Getter
     WorkArgPackage argPackage = WorkArgPackage.getDefault();
 
     /**
@@ -557,7 +557,7 @@ public class JapaneseService {
     }
 
     public void workJapaneseLearningVideo(String name) {
-        File tempFolderFile = new File(RUNTIME_IO_FOLDER + name + "_temp" + File.separator);
+        File tempFolderFile = new File(MainRunner.RUNTIME_IO_FOLDER + name + "_temp" + File.separator);
 
     }
 
@@ -582,9 +582,9 @@ public class JapaneseService {
 
         boolean saveRootHint = false;
 
-        List<String> lines = Utils.readAllLines(RUNTIME_IO_FOLDER + name + ".txt");
+        List<String> lines = Utils.readAllLines(MainRunner.RUNTIME_IO_FOLDER + name + ".txt");
         RootHint rootHint;
-        File rootHintFile = new File(RUNTIME_IO_FOLDER + name + ".rootHint.json");
+        File rootHintFile = new File(MainRunner.RUNTIME_IO_FOLDER + name + ".rootHint.json");
         if (rootHintFile.exists()) {
             rootHint = fileObjectMapper.readValue(rootHintFile, RootHint.class);
         } else {
@@ -665,7 +665,7 @@ public class JapaneseService {
         if (argPackage.outputLogFile) {
             try {
                 String logText = fileObjectMapper.writeValueAsString(serviceContext.getParsedLines());
-                Utils.writeAllLines(RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".log.json", logText);
+                Utils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".log.json", logText);
             } catch (JsonProcessingException e) {
                 log.error("bad outputLogFile", e);
             }
@@ -674,7 +674,7 @@ public class JapaneseService {
         if (argPackage.outputImage) {
             int space = 5;
             ImageRender.multiDraw(
-                    RUNTIME_IO_FOLDER + serviceContext.getTitle() + "_all_output.png",
+                    MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + "_all_output.png",
                     serviceContext.getParsedLines().stream()
                             .map(line -> {
                                 JapaneseExtraHint japaneseExtraHint = JapaneseExtraHint.builder()
@@ -693,13 +693,13 @@ public class JapaneseService {
         }
         if (argPackage.outputNicokara) {
             String kraFileText = serviceContext.getLyricsText() + "\n" + serviceContext.getRuby();
-            Utils.writeAllLines(RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".kra", kraFileText);
+            Utils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".kra", kraFileText);
         }
         if (argPackage.outputVideo) {
             int space = 10;
             int kanjiFontSize = 100;
             int kanaFontSize = 50;
-            String prepareFolder = RUNTIME_IO_FOLDER + serviceContext.getTitle() + "_videoTemp/";
+            String prepareFolder = MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + "_videoTemp/";
             List<Path> paths = ImageRender.multiDrawToFolder(
                     prepareFolder,
                     "{i}.png",
@@ -749,8 +749,8 @@ public class JapaneseService {
                     frames
             );
             log.info("outputVideo concat done.");
-            String outFile = RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".mp4";
-            String audioPath = RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".mp3";
+            String outFile = MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".mp4";
+            String audioPath = MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".mp3";
             VideoRender.addAudio(prepareFolder, outFile, audioPath);
             log.info("outputVideo addAudio done.");
         }

@@ -2,6 +2,7 @@ package hundun.nicokaratool.japanese;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import hundun.nicokaratool.MainRunner;
 import hundun.nicokaratool.japanese.JapaneseExtraHint.TranslationResultItem;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseLine;
 import hundun.nicokaratool.japanese.JapaneseService.JapaneseParsedToken;
@@ -38,7 +39,7 @@ public class MojiService {
     }
 
     public void loadCache() {
-        File file = new File(JapaneseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
+        File file = new File(MainRunner.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
         if (file.exists()) {
             try {
                 cache = fileObjectMapper.readValue(file, MojiServiceCache.class);
@@ -155,7 +156,7 @@ public class MojiService {
             }
         }
         if (cacheDirty) {
-            File file = new File(JapaneseService.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
+            File file = new File(MainRunner.CACHE_FOLDER + MojiServiceCache.class.getSimpleName() + ".json");
             try {
                 fileObjectMapper.writeValue(file, cache);
             } catch (IOException e) {
