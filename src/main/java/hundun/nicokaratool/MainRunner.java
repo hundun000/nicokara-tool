@@ -15,6 +15,7 @@ import static hundun.nicokaratool.japanese.JapaneseService.objectMapper;
 
 public class MainRunner {
     public static final String CACHE_FOLDER = "data/caches/";
+    public static final String PRIVATE_IO_FOLDER = "private-io/";
     public static final String RUNTIME_IO_FOLDER = "runtime-io/";
     static final String HANDLER_NICOKARA = "nicokara";
     static final String HANDLER_DB = "db";

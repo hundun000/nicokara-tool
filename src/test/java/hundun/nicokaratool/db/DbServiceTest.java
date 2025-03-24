@@ -11,6 +11,6 @@ public class DbServiceTest {
 
     @Test
     public void renderSongJson() throws Exception {
-        dbService.renderSongJson("Star Divine");
+        dbService.renderSongJson("example-japanese-short.db");
     }
 }

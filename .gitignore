@@ -1,5 +1,5 @@
 cache/*
-
+private-io/
 
 ### Gradle ###
 .gradle

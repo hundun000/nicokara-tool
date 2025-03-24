@@ -17,6 +17,6 @@ public class WordNoteDTO {
     private String origin; //文本类型，动词原形或形容原形。若已是原形可省略。
     private List<String> category; //文本类型数组，日语学习点分类，严格按照后文的category值域。如果一个词的学习点同时符合多个category，则均列出在数组里。
     private String explain; //文本类型，侧重于说明当前句子。
-    private String generalExplain; //文本类型，侧重于说明一般性的语法，不需要代入当前句子。如果explain已经足够则可省略。
+    private String extensionExplain; //文本类型，侧重于说明一般性的语法，不需要代入当前句子。如果explain已经足够则可省略。
     private String level; //文本类型，JLPT参考语法等级，值域为; //N5~N1，或"其他"
 }

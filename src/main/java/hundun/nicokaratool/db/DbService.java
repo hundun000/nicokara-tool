@@ -11,6 +11,7 @@ import hundun.nicokaratool.db.po.LyricLinePO;
 import hundun.nicokaratool.db.po.SongPO;
 import net.steppschuh.markdowngenerator.table.Table;
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
+import net.steppschuh.markdowngenerator.text.emphasis.ItalicText;
 import net.steppschuh.markdowngenerator.text.heading.Heading;
 
 import java.io.File;
@@ -18,6 +19,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class DbService {
 
@@ -27,6 +29,7 @@ public class DbService {
 
     public DbService() {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     }
     public void loadSongJson(String fileName) throws Exception {
         SongDTO songDTO = objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
@@ -71,7 +74,13 @@ public class DbService {
     };
 
     public void renderSongJson(String fileName) throws Exception {
-        SongDTO songDTO = objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
+        String actualFolder = MainRunner.PRIVATE_IO_FOLDER;
+        File actualInput = new File(actualFolder + fileName + ".json");
+        if (!actualInput.exists()) {
+            actualFolder = MainRunner.RUNTIME_IO_FOLDER;
+            actualInput = new File(actualFolder + fileName + ".json");
+        }
+        SongDTO songDTO = objectMapper.readValue(actualInput, SongDTO.class);
         StringBuilder result = new StringBuilder();
         result.append(new BoldText(songDTO.getTitle())).append("\n");
         result.append(songDTO.getArtist()).append("\n");
@@ -79,7 +88,7 @@ public class DbService {
                 .addRow(TABLE_TITLES);
         songDTO.getGroups().forEach(lyricGroupDTO -> {
             tableBuilder.addRow(
-                    Optional.ofNullable(lyricGroupDTO.getTranslation()).orElse(""),
+                    new ItalicText(Optional.ofNullable(lyricGroupDTO.getTranslation()).orElse("")),
                     Optional.ofNullable(lyricGroupDTO.getGroupNote()).orElse("")
             );
             lyricGroupDTO.getLineNotes().forEach(lyricLineDTO -> {
@@ -92,16 +101,16 @@ public class DbService {
                                     + Optional.ofNullable(wordNoteDTO.getHurikana()).map(it -> "(" + it + ")").orElse(""),
                             Optional.ofNullable(wordNoteDTO.getExplain()).orElse(""),
                             Optional.ofNullable(wordNoteDTO.getOrigin()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()),
+                            Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()).stream().collect(Collectors.joining(", ")),
                             Optional.ofNullable(wordNoteDTO.getLevel()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getGeneralExplain()).orElse("")
+                            Optional.ofNullable(wordNoteDTO.getExtensionExplain()).orElse("")
                     );
                 });
             });
             tableBuilder.addRow();
         });
         result.append(tableBuilder.build());
-        FileWriter myWriter = new FileWriter(MainRunner.RUNTIME_IO_FOLDER + fileName + ".md");
+        FileWriter myWriter = new FileWriter(actualFolder + fileName + ".md");
         myWriter.write(result.toString());
         myWriter.close();
     }

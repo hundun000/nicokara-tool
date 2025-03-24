@@ -1,0 +1,173 @@
+{
+  "title": "きらきら星",
+  "artist": "ksm",
+  "groups": [
+    {
+      "translation": "闪闪发光的天空中的星星啊",
+      "lineNotes": [
+        {
+          "lyric": "きらきら光る",
+          "wordNotes": [
+            {
+              "text": "きらきら",
+              "category": ["状态副词"],
+              "explain": "形容闪烁发亮的样子",
+              "level": "N3"
+            },
+            {
+              "text": "光る",
+              "hurikana": "ひかる",
+              "category": ["动词原形"],
+              "explain": "发光，闪耀",
+              "level": "N4"
+            }
+          ]
+        },
+        {
+          "lyric": "お空の星よ",
+          "wordNotes": [
+            {
+              "text": "お空",
+              "hurikana": "おそら",
+              "category": ["普通名词"],
+              "explain": "天空（お为美化前缀）",
+              "level": "N4"
+            },
+            {
+              "text": "の",
+              "category": ["格助词"],
+              "explain": "表示所属关系",
+              "level": "N5"
+            },
+            {
+              "text": "星",
+              "hurikana": "ほし",
+              "category": ["普通名词"],
+              "explain": "星星",
+              "level": "N5"
+            },
+            {
+              "text": "よ",
+              "category": ["终助词"],
+              "explain": "表示呼唤、感叹",
+              "level": "N4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "translation": "眨着眼睛注视着大家",
+      "groupNote": "前句是方式状语，后句是主句",
+      "lineNotes": [
+        {
+          "lyric": "まばたきしては",
+          "wordNotes": [
+            {
+              "text": "まばたき",
+              "hurikana": "まばたき",
+              "category": ["普通名词"],
+              "explain": "眨眼",
+              "level": "N3"
+            },
+            {
+              "text": "して",
+              "hurikana": "して",
+              "origin": "する",
+              "category": ["动词变形·て形"],
+              "explain": "做（する的て形）",
+              "level": "N5"
+            },
+            {
+              "text": "は",
+              "category": ["提示助词"],
+              "explain": "表示动作的反复",
+              "extensionExplain": "ては表示动作的反复进行",
+              "level": "N3"
+            }
+          ]
+        },
+        {
+          "lyric": "みんなを見てる",
+          "wordNotes": [
+            {
+              "text": "みんな",
+              "category": ["代词"],
+              "explain": "大家",
+              "level": "N5"
+            },
+            {
+              "text": "を",
+              "category": ["格助词"],
+              "explain": "表示动作对象",
+              "level": "N5"
+            },
+            {
+              "text": "見てる",
+              "hurikana": "みてる",
+              "origin": "見る",
+              "category": ["动词变形·て形", "补助动词"],
+              "explain": "看着（ている的口语缩略）",
+              "extensionExplain": "表示动作的持续状态",
+              "level": "N5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "translation": "闪闪发光的天空中的星星啊",
+      "lineNotes": [
+        {
+          "lyric": "きらきら光る",
+          "wordNotes": [
+            {
+              "text": "きらきら",
+              "category": ["状态副词"],
+              "explain": "形容闪烁发亮的样子",
+              "level": "N3"
+            },
+            {
+              "text": "光る",
+              "hurikana": "ひかる",
+              "category": ["动词原形"],
+              "explain": "发光，闪耀",
+              "level": "N4"
+            }
+          ]
+        },
+        {
+          "lyric": "お空の星よ",
+          "wordNotes": [
+            {
+              "text": "お空",
+              "hurikana": "おそら",
+              "category": ["普通名词"],
+              "explain": "天空（お为美化前缀）",
+              "level": "N4"
+            },
+            {
+              "text": "の",
+              "category": ["格助词"],
+              "explain": "表示所属关系",
+              "level": "N5"
+            },
+            {
+              "text": "星",
+              "hurikana": "ほし",
+              "category": ["普通名词"],
+              "explain": "星星",
+              "level": "N5"
+            },
+            {
+              "text": "よ",
+              "category": ["终助词"],
+              "explain": "表示呼唤、感叹",
+              "level": "N4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
