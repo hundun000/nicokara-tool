@@ -6,13 +6,17 @@ import hundun.nicokaratool.MainRunner;
 import hundun.nicokaratool.db.dto.LyricGroupDTO;
 import hundun.nicokaratool.db.dto.LyricLineDTO;
 import hundun.nicokaratool.db.dto.SongDTO;
-import hundun.nicokaratool.db.po.LyricGroupPO;
-import hundun.nicokaratool.db.po.LyricLinePO;
+import hundun.nicokaratool.db.dto.WordNoteDTO;
 import hundun.nicokaratool.db.po.SongPO;
+import hundun.nicokaratool.db.po.SongPO.LyricGroupPO;
+import hundun.nicokaratool.db.po.SongPO.LyricLinePO;
+import hundun.nicokaratool.db.po.WordNotePO;
+import hundun.nicokaratool.db.repository.SongRepository;
+import hundun.nicokaratool.db.repository.WordNoteRepository;
+import lombok.extern.slf4j.Slf4j;
 import net.steppschuh.markdowngenerator.table.Table;
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
 import net.steppschuh.markdowngenerator.text.emphasis.ItalicText;
-import net.steppschuh.markdowngenerator.text.heading.Heading;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -21,12 +25,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class DbService {
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    public ObjectMapper objectMapper = new ObjectMapper();
     SongRepository songRepository = new SongRepository();
-    LineRepository lineRepository = new LineRepository();
-
+    WordNoteRepository wordNoteRepository = new WordNoteRepository();
     public DbService() {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -41,45 +45,61 @@ public class DbService {
             throw new Exception("existTitle: " + songDTO.getTitle());
         }
         songPO = songRepository.save(songPO);
-        List<LyricLinePO> linePOS = new ArrayList<>();
         List<LyricGroupPO> groupPOS = new ArrayList<>();
+        List<WordNotePO> notePOS = new ArrayList<>();
         for (int i = 0; i < songDTO.getGroups().size(); i++) {
             LyricGroupDTO groupDTO = songDTO.getGroups().get(i);
+            List<LyricLinePO> linePOS = new ArrayList<>();
             for (int j = 0; j < groupDTO.getLineNotes().size(); j++) {
                 LyricLineDTO lineDTO = groupDTO.getLineNotes().get(j);
-                linePOS.add(
-                        LyricLinePO.builder()
-                                .id(LyricLinePO.toId(songPO.getId(), i, i))
-                                .groupIndex(i)
-                                .lineIndex(j)
-                                .songId(songPO.getId())
-                                .build()
+                for (int k = 0; k < lineDTO.getWordNotes().size(); k++) {
+                    var wordNoteDTO = lineDTO.getWordNotes().get(k);
+                    var wordNotePO = objectMapper.readValue(objectMapper.writeValueAsString(wordNoteDTO), WordNotePO.class);
+                    wordNotePO.setId(WordNotePO.toId(songPO.getId(), i, j, k));
+                    wordNotePO.setSongId(songPO.getId());
+                    wordNotePO.setGroupIndex(i);
+                    wordNotePO.setLineIndex(j);
+                    wordNotePO.setWordIndex(k);
+                    notePOS.add(wordNotePO);
+                }
+                linePOS.add(LyricLinePO.builder()
+                        .lyric(lineDTO.getLyric())
+                        .wordSize(lineDTO.getWordNotes().size())
+                        .build()
                 );
             }
             groupPOS.add(
                     LyricGroupPO.builder()
                             .translation(groupDTO.getTranslation())
                             .groupNote(groupDTO.getGroupNote())
-                            .lineSize(groupDTO.getLineNotes().size())
+                            .lines(linePOS)
                             .build()
             );
         }
         songPO.setGroups(groupPOS);
         songRepository.save(songPO);
-        lineRepository.saveAll(linePOS);
+        wordNoteRepository.saveAll(notePOS);
+        log.info("save songPO: {}, notePOS size = {}", songPO.getId(), notePOS.size());
     }
 
     static final String[] TABLE_TITLES = new String[] {
             "原文/中文", "解释", "原形", "分类", "等级", "更多解释"
     };
 
-    public void renderSongJson(String fileName) throws Exception {
+    private File getActualJsonFile(String fileName) {
         String actualFolder = MainRunner.PRIVATE_IO_FOLDER;
         File actualInput = new File(actualFolder + fileName + ".json");
         if (!actualInput.exists()) {
             actualFolder = MainRunner.RUNTIME_IO_FOLDER;
             actualInput = new File(actualFolder + fileName + ".json");
         }
+        return actualInput;
+    }
+
+    public void renderSongJson(String fileName) throws Exception {
+
+        File actualInput = getActualJsonFile(fileName);
+
         SongDTO songDTO = objectMapper.readValue(actualInput, SongDTO.class);
         StringBuilder result = new StringBuilder();
         result.append(new BoldText(songDTO.getTitle())).append("\n");
@@ -110,7 +130,7 @@ public class DbService {
             tableBuilder.addRow();
         });
         result.append(tableBuilder.build());
-        FileWriter myWriter = new FileWriter(actualFolder + fileName + ".md");
+        FileWriter myWriter = new FileWriter(actualInput.getParent() + File.separator + fileName + ".md");
         myWriter.write(result.toString());
         myWriter.close();
     }
@@ -122,13 +142,22 @@ public class DbService {
         for (int groupIndex = 0; groupIndex < songPO.getGroups().size(); groupIndex++) {
             LyricGroupPO groupPO = songPO.getGroups().get(groupIndex);
             List<LyricLineDTO> lineDTOS = new ArrayList<>();
-            for (int lineIndex = 0; lineIndex < groupPO.getLineSize(); lineIndex++) {
-                String id = LyricLinePO.toId(songPO.getId(), groupIndex, lineIndex);
-                LyricLinePO find = lineRepository.findById(id);
-                if (find == null) {
-                    throw new Exception("NotFound LyricLinePO id = " + id);
+            for (int lineIndex = 0; lineIndex < groupPO.getLines().size(); lineIndex++) {
+                LyricLinePO linePO = groupPO.getLines().get(lineIndex);
+                List<WordNoteDTO> wordNotes = new ArrayList<>();
+                for (int wordIndex = 0; wordIndex < linePO.getWordSize(); wordIndex++) {
+                    String id = WordNotePO.toId(songPO.getId(), groupIndex, lineIndex, wordIndex);
+                    WordNotePO wordNotePO = wordNoteRepository.findById(id);
+                    if (wordNotePO == null) {
+                        throw new Exception("NotFound WordNotePO id = " + id);
+                    }
+                    WordNoteDTO wordNoteDTO = objectMapper.readValue(objectMapper.writeValueAsString(wordNotePO), WordNoteDTO.class);
+                    wordNotes.add(wordNoteDTO);
                 }
-                LyricLineDTO lineDTO = objectMapper.readValue(objectMapper.writeValueAsString(find), LyricLineDTO.class);
+                LyricLineDTO lineDTO = LyricLineDTO.builder()
+                        .lyric(linePO.getLyric())
+                        .wordNotes(wordNotes)
+                        .build();
                 lineDTOS.add(lineDTO);
             }
             groups.add(

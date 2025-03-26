@@ -46,7 +46,7 @@
     <img src="./doc/1.png" alt="">
 </details>
 
-进一步地，根据已知的每句歌词的时间范围，合并歌曲音频，此时的歌词分析图片，输出视频。
+进一步地，合并歌曲音频+每句歌词的时间范围对应的分析图片，输出视频。
 
 此用法的实现是通过程序调用翻译和释义接口。
 
@@ -143,4 +143,5 @@ prompt中要求ai联系上下文解读，能一定程度缓解上述用法2的�
 - 单词释义：Moji api  
 - 整句翻译：Google翻译
 - 手工询问大模型AI
+- 视频合成：FFMpeg
 - 输出格式用途：[NicokaraMaker2](https://shinta.coresv.com/old-logs/nicokaramaker2-jpn/)

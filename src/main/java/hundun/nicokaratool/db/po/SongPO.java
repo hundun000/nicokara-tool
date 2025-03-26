@@ -20,4 +20,23 @@ public class SongPO {
     private String title;
     private String artist;
     private List<LyricGroupPO> groups;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LyricGroupPO {
+        private String translation;
+        private String groupNote;
+        List<LyricLinePO> lines;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LyricLinePO {
+        private String lyric;
+        int wordSize;
+    }
 }
