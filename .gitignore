@@ -1,5 +1,6 @@
 cache/*
 private-io/
+src/test/**/Private*.java
 
 ### Gradle ###
 .gradle
