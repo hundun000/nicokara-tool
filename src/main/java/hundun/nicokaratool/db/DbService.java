@@ -1,9 +1,7 @@
 package hundun.nicokaratool.db;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import hundun.nicokaratool.MainRunner;
+import hundun.nicokaratool.db.ai.AiServiceLocator;
 import hundun.nicokaratool.db.dto.LyricGroupDTO;
 import hundun.nicokaratool.db.dto.LyricLineDTO;
 import hundun.nicokaratool.db.dto.SongDTO;
@@ -14,6 +12,7 @@ import hundun.nicokaratool.db.po.SongPO.LyricLinePO;
 import hundun.nicokaratool.db.po.WordNotePO;
 import hundun.nicokaratool.db.repository.SongRepository;
 import hundun.nicokaratool.db.repository.WordNoteRepository;
+import hundun.nicokaratool.util.JsonUtils;
 import hundun.nicokaratool.util.Utils;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import lombok.Data;
@@ -33,15 +32,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DbService {
 
-    public ObjectMapper objectMapper = new ObjectMapper();
+    AiServiceLocator aiServiceLocator = new AiServiceLocator();
     SongRepository songRepository = new SongRepository();
     WordNoteRepository wordNoteRepository = new WordNoteRepository();
     public DbService() {
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
     }
     public void loadSongJson(String fileName) throws Exception {
-        SongDTO songDTO = objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
+        SongDTO songDTO = JsonUtils.objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
         SongPO songPO = SongPO.builder()
                 .title(songDTO.getTitle())
                 .artist(songDTO.getArtist())
@@ -59,7 +57,7 @@ public class DbService {
                 LyricLineDTO lineDTO = groupDTO.getLineNotes().get(j);
                 for (int k = 0; k < lineDTO.getWordNotes().size(); k++) {
                     var wordNoteDTO = lineDTO.getWordNotes().get(k);
-                    var wordNotePO = objectMapper.readValue(objectMapper.writeValueAsString(wordNoteDTO), WordNotePO.class);
+                    var wordNotePO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(wordNoteDTO), WordNotePO.class);
                     wordNotePO.setId(WordNotePO.toId(songPO.getId(), i, j, k));
                     wordNotePO.setSongId(songPO.getId());
                     wordNotePO.setGroupIndex(i);
@@ -108,7 +106,7 @@ public class DbService {
         List<List<String>> originGroups = lyricLines.stream()
                 .map(it -> List.of(it))
                 .collect(Collectors.toList());
-        List<List<String>> lyricTaskGroups = aiTaskGroups(originGroups, it -> it.stream().allMatch(itt -> itt.isEmpty()), 10, 25);
+        List<List<String>> lyricTaskGroups = splitAiTaskGroups(originGroups, it -> it.stream().allMatch(itt -> itt.isEmpty()), 10, 25);
 
         File actualStep1AskTemplateFile = getActualFile( "Step1AskTemplate.txt");
         String step1AskTemplate = Utils.readAllLines(actualStep1AskTemplateFile).stream().collect(Collectors.joining("\n"));
@@ -116,20 +114,15 @@ public class DbService {
 
         for (int i = 0; i < lyricTaskGroups.size(); i++) {
             List<String> lyricTaskGroup = lyricTaskGroups.get(i);
-            List<AiStep1ResultNode> groupResult = null;
-            int retry = 0;
-            while (groupResult == null && retry < 3) {
-                log.info("start lyricTaskGroup[{}] size = {}, retry = {}", i, lyricTaskGroup.size(), retry);
-                groupResult = aiStep1Group(lyricTaskGroup, step1AskTemplate);
-                retry++;
-            }
+            log.info("start lyricTaskGroup[{}] size = {}", i, lyricTaskGroup.size());
+            List<AiStep1ResultNode> groupResult = aiServiceLocator.aiStep1Group(lyricTaskGroup, step1AskTemplate);
             if (groupResult != null) {
                 result.addAll(groupResult);
             } else {
                 throw new Exception("cannot handle group = " + lyricTaskGroup);
             }
         }
-        objectMapper.writeValue(actualOutput, result);
+        JsonUtils.objectMapper.writeValue(actualOutput, result);
     }
 
     public void runAiStep2(String title, String artist) throws Exception {
@@ -146,20 +139,15 @@ public class DbService {
                 )
                 .map(it -> it.getLineNotes())
                 .collect(Collectors.toList());
-        List<List<LyricLineDTO>> taskGroups = aiTaskGroups(targetGroups, it -> false, 2, 4);
+        List<List<LyricLineDTO>> taskGroups = splitAiTaskGroups(targetGroups, it -> false, -1, -1);
         for (int i = 0; i < taskGroups.size(); i++) {
             // taskGroup的所有歌词合起来问一次
             List<LyricLineDTO> taskGroup = taskGroups.get(i);
             List<String> askLines = taskGroup.stream()
                     .map(it -> it.getLyric())
                     .collect(Collectors.toList());
-            List<LyricLineDTO> groupResult = null;
-            int retry = 0;
-            while (groupResult == null && retry < 3) {
-                log.info("start aiStep2Group Group[{}] size = {}, retry = {}", i, askLines.size(), retry);
-                groupResult = aiStep2Group(askLines, step2AskTemplate);
-                retry++;
-            }
+            log.info("start aiStep2Group Group[{}] size = {}", i, askLines.size());
+            List<LyricLineDTO> groupResult = aiServiceLocator.aiStep2Group(askLines, step2AskTemplate);
             if (groupResult != null) {
                 // 将结果分配回taskGroup
                 for (LyricLineDTO lineDTO : taskGroup) {
@@ -170,33 +158,16 @@ public class DbService {
                 log.error("cannot handle askLines = {}", askLines);
             }
         }
-        objectMapper.writeValue(resultFile, songDTO);
+        JsonUtils.objectMapper.writeValue(resultFile, songDTO);
     }
 
-    private List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplateFile) throws Exception {
-        String ask = step2AskTemplateFile + "\n" + askLines.stream().collect(Collectors.joining("\n\n"));
-        try {
-            OllamaChatResult chatResult = OllamaService.singleAsk(ask);
-            String content = chatResult.getResponseModel().getMessage().getContent();
-            content = content.split("</think>")[1].trim();
-            content = content.replace("```json", "").replace("```", "");
-            List<LyricLineDTO> nodes = objectMapper.readValue(content, objectMapper.getTypeFactory().constructCollectionType(List.class, LyricLineDTO.class));
-            List<String> resultLines = nodes.stream().map(node -> node.getLyric()).collect(Collectors.toList());
-            if (!askLines.equals(resultLines)) {
-                throw new Exception("resultLines not equals.");
-            }
-            return nodes;
-        } catch (Exception e) {
-            log.error("bad aiStep1Group: ", e);
-        }
-        return null;
-    }
+
 
     private SongDTO aiStep2PrepareResult(File step1ResultFile, File resultFile, String title, String artist) throws Exception {
         if (resultFile.exists()) {
-            return objectMapper.readValue(resultFile, SongDTO.class);
+            return JsonUtils.objectMapper.readValue(resultFile, SongDTO.class);
         } else if (step1ResultFile.exists()) {
-            List<AiStep1ResultNode> step1ResultNodes = objectMapper.readValue(step1ResultFile, objectMapper.getTypeFactory().constructCollectionType(List.class, AiStep1ResultNode.class));
+            List<AiStep1ResultNode> step1ResultNodes = JsonUtils.objectMapper.readValue(step1ResultFile, JsonUtils.objectMapper.getTypeFactory().constructCollectionType(List.class, AiStep1ResultNode.class));
             List<LyricGroupDTO> groups = step1ResultNodes.stream()
                     .map(it -> LyricGroupDTO.builder()
                             .translation(it.getTranslation())
@@ -220,24 +191,6 @@ public class DbService {
     }
 
 
-    private List<AiStep1ResultNode> aiStep1Group(List<String> lyricLines, String actualStep1AskTemplate) {
-        String ask = actualStep1AskTemplate + lyricLines.stream().collect(Collectors.joining("\n"));
-        try {
-            OllamaChatResult chatResult = OllamaService.singleAsk(ask);
-            String content = chatResult.getResponseModel().getMessage().getContent();
-            content = content.split("</think>")[1].trim();
-            List<AiStep1ResultNode> nodes = objectMapper.readValue(content, objectMapper.getTypeFactory().constructCollectionType(List.class, AiStep1ResultNode.class));
-            List<String> resultLines = nodes.stream().flatMap(node -> node.getLyrics().stream()).collect(Collectors.toList());
-            if (!lyricLines.equals(resultLines)) {
-                throw new Exception("lyricLines not equals.");
-            }
-            return nodes;
-        } catch (Exception e) {
-            log.error("bad aiStep1Group: ", e);
-        }
-        return null;
-    }
-
     @Data
     public static class AiStep1ResultNode {
         private String translation;
@@ -245,45 +198,11 @@ public class DbService {
         private List<String> lyrics;
     }
 
-    private List<List<String>> aiStep1TaskGroups(List<String> lyricLines) {
-        int MIN_LINE = 10;
-        int MAX_LINE = 25;
-        List<List<String>> lyricTaskGroups = new ArrayList<>();
-        List<String> currentGroup = null;
-        while (!lyricLines.isEmpty()) {
-            if (currentGroup == null) {
-                currentGroup = new ArrayList<>();
-                lyricTaskGroups.add(currentGroup);
-            }
-            String line = lyricLines.remove(0);
-            boolean currentGroupContinue;
-            if (currentGroup.size() < MIN_LINE) {
-                currentGroupContinue = true;
-            } else if (currentGroup.size() < MAX_LINE) {
-                if (line.isEmpty()) {
-                    currentGroupContinue = false;
-                } else {
-                    currentGroupContinue = true;
-                }
-            } else {
-                currentGroupContinue = false;
-            }
-            if (!line.isEmpty()) {
-                currentGroup.add(line);
-            }
-            if (!currentGroupContinue) {
-                currentGroup = null;
-            }
-        }
-        return lyricTaskGroups;
-    }
-
-
     /**
      *将List<T>分为每组大小介于[MIN_SIZE, MAX_SIZE]的List<List<T>> (仅最后一组个数可能不足)；
      * 分组期间，如果某组已满足大于MIN_SIZE时，emptyChecker触发，则提前结束这一组；否则继续增加直到MAX_SIZE；
      */
-    private <T> List<List<T>> aiTaskGroups(List<List<T>> originGroups, Function<List<T>, Boolean> emptyChecker, int MIN_SIZE, int MAX_SIZE) {
+    private <T> List<List<T>> splitAiTaskGroups(List<List<T>> originGroups, Function<List<T>, Boolean> emptyChecker, int MIN_SIZE, int MAX_SIZE) {
         originGroups = new ArrayList<>(originGroups);
         List<List<T>> resultGroups = new ArrayList<>();
         List<T> currentGroup = null;
@@ -302,6 +221,8 @@ public class DbService {
                 } else {
                     currentGroupContinue = true;
                 }
+            } else if (currentGroup.isEmpty()) {
+                currentGroupContinue = true;
             } else {
                 currentGroupContinue = false;
             }
@@ -319,7 +240,7 @@ public class DbService {
 
         File actualInput = getActualFile(fileName + ".json");
 
-        SongDTO songDTO = objectMapper.readValue(actualInput, SongDTO.class);
+        SongDTO songDTO = JsonUtils.objectMapper.readValue(actualInput, SongDTO.class);
         StringBuilder result = new StringBuilder();
         result.append(new BoldText(songDTO.getTitle())).append("\n  ");
         result.append(songDTO.getArtist()).append("\n  ");
@@ -374,7 +295,7 @@ public class DbService {
                     if (wordNotePO == null) {
                         throw new Exception("NotFound WordNotePO id = " + id);
                     }
-                    WordNoteDTO wordNoteDTO = objectMapper.readValue(objectMapper.writeValueAsString(wordNotePO), WordNoteDTO.class);
+                    WordNoteDTO wordNoteDTO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(wordNotePO), WordNoteDTO.class);
                     wordNotes.add(wordNoteDTO);
                 }
                 LyricLineDTO lineDTO = LyricLineDTO.builder()
