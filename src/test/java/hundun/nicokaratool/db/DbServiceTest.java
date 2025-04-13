@@ -1,5 +1,6 @@
 package hundun.nicokaratool.db;
 
+import hundun.nicokaratool.util.JsonUtils;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -22,6 +23,6 @@ public class DbServiceTest {
     @Test
     public void buildDTOFromDbByTitle() throws Exception {
         var result = dbService.buildDTOFromDbByTitle("きらきら星");
-        System.out.println(dbService.objectMapper.writeValueAsString(result));
+        System.out.println(JsonUtils.objectMapper.writeValueAsString(result));
     }
 }
