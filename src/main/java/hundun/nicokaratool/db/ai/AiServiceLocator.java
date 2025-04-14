@@ -50,31 +50,35 @@ public class AiServiceLocator extends AiService {
         originGroups = new ArrayList<>(originGroups);
         List<List<T>> resultGroups = new ArrayList<>();
         List<T> currentGroup = null;
-        while (!originGroups.isEmpty()) {
+        List<T> addToNextGroup = null;
+        while (!originGroups.isEmpty() || addToNextGroup != null) {
             if (currentGroup == null) {
                 currentGroup = new ArrayList<>();
                 resultGroups.add(currentGroup);
             }
-            List<T> originGroup = originGroups.remove(0);
-            boolean currentGroupContinue;
+            List<T> originGroup;
+            // 取一个新的，或是用上一个循环未使用的
+            if (addToNextGroup == null) {
+                originGroup = originGroups.remove(0);
+            } else {
+                originGroup = addToNextGroup;
+                addToNextGroup = null;
+            }
             if (currentGroup.size() + originGroup.size() <= MIN_SIZE) {
-                currentGroupContinue = true;
             } else if (currentGroup.size() + originGroup.size() < MAX_SIZE) {
                 if (emptyChecker.apply(originGroup)) {
-                    currentGroupContinue = false;
-                } else {
-                    currentGroupContinue = true;
+                    addToNextGroup = originGroup;
                 }
             } else if (currentGroup.isEmpty()) {
-                currentGroupContinue = true;
             } else {
-                currentGroupContinue = false;
+                addToNextGroup = originGroup;
             }
-            if (!emptyChecker.apply(originGroup)) {
-                currentGroup.addAll(originGroup);
-            }
-            if (!currentGroupContinue) {
+            if (addToNextGroup != null) {
                 currentGroup = null;
+            } else {
+                if (!emptyChecker.apply(originGroup)) {
+                    currentGroup.addAll(originGroup);
+                }
             }
         }
         return resultGroups;
