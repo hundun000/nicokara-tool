@@ -14,7 +14,8 @@ public class GoogleAiFeignClientImpl {
     IGoogleAiFeignClient googleAiFeignClient;
 
     String key;
-    String model = "gemini-2.0-flash";
+    //String model = "gemini-2.0-flash";
+    String model = "gemini-2.5-flash-preview-04-17";
     float temperature = 0.2f;
     public GoogleAiFeignClientImpl() {
         googleAiFeignClient = IGoogleAiFeignClient.instance();

@@ -14,8 +14,10 @@ import hundun.nicokaratool.db.repository.SongRepository;
 import hundun.nicokaratool.db.repository.WordNoteRepository;
 import hundun.nicokaratool.util.JsonUtils;
 import hundun.nicokaratool.util.Utils;
-import io.github.ollama4j.models.chat.OllamaChatResult;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.steppschuh.markdowngenerator.table.Table;
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
@@ -23,10 +25,7 @@ import net.steppschuh.markdowngenerator.text.emphasis.ItalicText;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -86,23 +85,73 @@ public class DbService {
     }
 
     static final Object[] TABLE_TITLES = new String[] {
-            "原文/中文", "解释", "原形", "分类", "等级", "更多解释"
+            "原文/中文", "解释", "原形", "更多解释"
     };
 
     private File getActualFile(String fileName) {
-        String actualFolder = MainRunner.PRIVATE_IO_FOLDER;
-        File actualFolderFile = new File(actualFolder);
-        if (!actualFolderFile.exists()) {
-            actualFolder = MainRunner.RUNTIME_IO_FOLDER;
-        }
-        return new File(actualFolder + fileName);
+        return getActualFile(List.of(fileName), List.of()).get(0);
     }
 
-    public void runAiStep1(String fileName) throws Exception {
-        File actualInput = getActualFile(fileName + ".txt");
-        File actualOutput = getActualFile(fileName + ".step1.json");
+    /**
+     * 在候选文件夹中检查所有 mainFileNameOptions, 第一个存在的将确定文件夹和第一个文件；
+     * 确定文件夹后，otherFileNames均采用该文件夹；
+     */
+    private List<File> getActualFile(List<String> mainFileNameOptions, List<String> otherFileNames) {
+        String actualFolder = MainRunner.PRIVATE_IO_FOLDER;
+        File actualFile = mainFileNameOptions.stream()
+                .map(it -> new File(MainRunner.PRIVATE_IO_FOLDER + it))
+                .filter(it -> it.exists())
+                .findFirst()
+                .orElse(null);
+        if (actualFile == null) {
+            actualFolder = MainRunner.RUNTIME_IO_FOLDER;
+            actualFile = mainFileNameOptions.stream()
+                    .map(it -> new File(MainRunner.RUNTIME_IO_FOLDER + it))
+                    .filter(it -> it.exists())
+                    .findFirst()
+                    .orElse(null);
+        }
+        if (actualFile == null) {
+            throw new NoSuchElementException("候选文件夹中均找不到文件：" + String.join(", ", mainFileNameOptions));
+        }
+        List<File> result = new ArrayList<>();
+        result.add(actualFile);
+        String finalActualFolder = actualFolder;
+        otherFileNames.stream()
+                .map(it -> new File(finalActualFolder + it))
+                .forEach(it -> result.add(it));
+        return result;
+    }
 
-        List<String> lyricLines = Utils.readAllLines(actualInput);
+    public static String[] handleFileName(String fileName) {
+        String artist = null;
+        String title;
+        if (fileName.contains(" - ")) {
+            var parts = fileName.split(" - ");
+            title = parts[0];
+            artist = parts[1];
+        } else {
+            title = fileName;
+        }
+        return new String[]{fileName, title, artist};
+    }
+    private static final String[] PREFIXES_TO_REMOVE = {"作词 :", "作曲 :", "编曲 :"};
+    public void runAiStep1(String[] args) throws Exception {
+        String filaName = args[0];
+        String title = args[1];
+        String artist = args[2];
+
+        var actualFiles = getActualFile(
+                List.of(filaName + ".txt", filaName + ".lrc"),
+                List.of(filaName + ".step1.json")
+        );
+        File actualInput = actualFiles.get(0);
+        File actualOutput = actualFiles.get(1);
+
+        List<String> lyricLines = Utils.readAllLines(actualInput).stream()
+                .map(line -> line.replaceAll("^\\[\\d{2}:\\d{2}\\.\\d{3}\\](.*)", "$1"))
+                .filter(line -> Arrays.stream(PREFIXES_TO_REMOVE).noneMatch(line::startsWith))
+                .collect(Collectors.toList());
         List<List<String>> originGroups = lyricLines.stream()
                 .map(it -> List.of(it))
                 .collect(Collectors.toList());
@@ -115,14 +164,18 @@ public class DbService {
 
         File actualStep1AskTemplateFile = getActualFile( "Step1AskTemplate.txt");
         String step1AskTemplate = Utils.readAllLines(actualStep1AskTemplateFile).stream().collect(Collectors.joining("\n"));
-        List<AiStep1ResultNode> result = new ArrayList<>();
+        AiStep1Result result = AiStep1Result.builder()
+                .title(title)
+                .artist(artist)
+                .nodes(new ArrayList<>())
+                .build();
 
         for (int i = 0; i < lyricTaskGroups.size(); i++) {
             List<String> lyricTaskGroup = lyricTaskGroups.get(i);
             log.info("start lyricTaskGroup[{}] size = {}", i, lyricTaskGroup.size());
             List<AiStep1ResultNode> groupResult = aiServiceLocator.aiStep1Group(lyricTaskGroup, step1AskTemplate);
             if (groupResult != null) {
-                result.addAll(groupResult);
+                result.getNodes().addAll(groupResult);
             } else {
                 throw new Exception("cannot handle group = " + lyricTaskGroup);
             }
@@ -130,13 +183,20 @@ public class DbService {
         JsonUtils.objectMapper.writeValue(actualOutput, result);
     }
 
-    public void runAiStep2(String title, String artist) throws Exception {
-        File step1ResultFile = getActualFile(title + ".step1.json");
-        File resultFile = getActualFile(title + ".step2.json");
-        File step2AskTemplateFile = getActualFile( "Step2AskTemplate.txt");
+    public void runAiStep2(String[] args) throws Exception {
+        String filaName = args[0];
+
+        var actualFiles = getActualFile(
+                List.of(filaName + ".step1.json"),
+                List.of(filaName + ".step2.json",
+                        "Step2AskTemplate.txt")
+        );
+        File step1ResultFile = actualFiles.get(0);
+        File resultFile = actualFiles.get(1);
+        File step2AskTemplateFile = actualFiles.get(2);
         String step2AskTemplate = Utils.readAllLines(step2AskTemplateFile).stream().collect(Collectors.joining("\n"));
 
-        SongDTO songDTO = aiStep2PrepareResult(step1ResultFile, resultFile, title, artist);
+        SongDTO songDTO = aiStep2PrepareResult(step1ResultFile, resultFile);
         // 只选择待处理的LyricGroupDTO
         List<List<LyricLineDTO>> targetGroups = songDTO.getGroups().stream()
                 .filter(it -> it.getLineNotes().stream()
@@ -173,12 +233,12 @@ public class DbService {
 
 
 
-    private SongDTO aiStep2PrepareResult(File step1ResultFile, File resultFile, String title, String artist) throws Exception {
+    private SongDTO aiStep2PrepareResult(File step1ResultFile, File resultFile) throws Exception {
         if (resultFile.exists()) {
             return JsonUtils.objectMapper.readValue(resultFile, SongDTO.class);
         } else if (step1ResultFile.exists()) {
-            List<AiStep1ResultNode> step1ResultNodes = JsonUtils.objectMapper.readValue(step1ResultFile, JsonUtils.objectMapper.getTypeFactory().constructCollectionType(List.class, AiStep1ResultNode.class));
-            List<LyricGroupDTO> groups = step1ResultNodes.stream()
+            AiStep1Result step1Result = JsonUtils.objectMapper.readValue(step1ResultFile, AiStep1Result.class);
+            List<LyricGroupDTO> groups = step1Result.getNodes().stream()
                     .map(it -> LyricGroupDTO.builder()
                             .translation(it.getTranslation())
                             .groupNote(it.getGroupNote())
@@ -191,8 +251,8 @@ public class DbService {
                             .build())
                     .collect(Collectors.toList());
             return SongDTO.builder()
-                    .title(title)
-                    .artist(artist)
+                    .title(step1Result.getTitle())
+                    .artist(step1Result.getArtist())
                     .groups(groups)
                     .build();
         } else {
@@ -208,7 +268,15 @@ public class DbService {
         private List<String> lyrics;
     }
 
-
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class AiStep1Result {
+        private String title;
+        private String artist;
+        private List<AiStep1ResultNode> nodes;
+    }
 
     public void renderSongJson(String fileName) throws Exception {
 
@@ -241,7 +309,7 @@ public class DbService {
                             Optional.ofNullable(wordNoteDTO.getOrigin()).orElse(""),
                             //Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()).stream().collect(Collectors.joining(", ")),
                             //Optional.ofNullable(wordNoteDTO.getLevel()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getContextualFunction()).orElse("")
+                            Optional.ofNullable(wordNoteDTO.getExplain()).orElse("")
                     );
                 });
             });

@@ -46,6 +46,7 @@ public class AiServiceLocator extends AiService {
     /**
      *将List<T>分为每组大小介于[MIN_SIZE, MAX_SIZE]的List<List<T>> (仅最后一组个数可能不足)；
      * 分组期间，如果某组已满足大于MIN_SIZE时，emptyChecker触发，则提前结束这一组；否则继续增加直到MAX_SIZE；
+     * 若MIN_SIZE和MAX_SIZE为负数，效果为不变；
      */
     public <T> List<List<T>> splitAiTaskGroups(List<List<T>> originGroups, Function<List<T>, Boolean> emptyChecker, int MIN_SIZE, int MAX_SIZE) {
         originGroups = new ArrayList<>(originGroups);
