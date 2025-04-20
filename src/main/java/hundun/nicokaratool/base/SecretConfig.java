@@ -12,6 +12,7 @@ import java.io.IOException;
 public class SecretConfig {
     static ObjectMapper objectMapper = new ObjectMapper();
     public static String gptAuthorization;
+    public static String googleKey;
     @Nullable
     public static JsonNode proxyConfig;
     @Nullable
@@ -21,6 +22,7 @@ public class SecretConfig {
         try {
             JsonNode secretFile = objectMapper.readTree(new File("data/Secret/secret.json"));
             gptAuthorization = secretFile.get("gptKey").asText();
+            googleKey = secretFile.get("googleKey").asText();
             proxyConfig = secretFile.get("proxyConfig");
             ffmpegConfig = secretFile.get("ffmpegConfig");
         } catch (IOException e) {

@@ -16,7 +16,8 @@ public class AiServiceLocator extends AiService {
 
     ManualDeepseekService manualDeepseekService = new ManualDeepseekService();
     LocalDeepseekService localDeepseekService = new LocalDeepseekService();
-    AiService aiService = manualDeepseekService;
+    GoogleAiService googleAiService = new GoogleAiService();
+    AiService aiService = googleAiService;
 
     @Override
     public @Nullable List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplate) {

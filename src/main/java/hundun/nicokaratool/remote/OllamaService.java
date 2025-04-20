@@ -1,4 +1,4 @@
-package hundun.nicokaratool.db;
+package hundun.nicokaratool.remote;
 
 import io.github.ollama4j.OllamaAPI;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;

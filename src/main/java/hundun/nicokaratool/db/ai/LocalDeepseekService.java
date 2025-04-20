@@ -1,7 +1,7 @@
 package hundun.nicokaratool.db.ai;
 
 import hundun.nicokaratool.db.DbService.AiStep1ResultNode;
-import hundun.nicokaratool.db.OllamaService;
+import hundun.nicokaratool.remote.OllamaService;
 import hundun.nicokaratool.db.dto.LyricLineDTO;
 import hundun.nicokaratool.util.JsonUtils;
 import io.github.ollama4j.models.chat.OllamaChatResult;
@@ -23,8 +23,8 @@ public class LocalDeepseekService extends AiService {
     }
 
     @Override
-    public @Nullable List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplateFile) {
-        String ask = step2AskTemplateFile + "\n" + askLines.stream().collect(Collectors.joining("\n\n"));
+    public @Nullable List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplate) {
+        String ask = step2AskTemplate + "\n" + askLines.stream().collect(Collectors.joining("\n\n"));
         try {
             OllamaChatResult chatResult = OllamaService.singleAsk(ask);
             String content = chatResult.getResponseModel().getMessage().getContent();
@@ -38,7 +38,7 @@ public class LocalDeepseekService extends AiService {
             }
             return nodes;
         } catch (Exception e) {
-            log.error("bad aiStep1Group: ", e);
+            log.error("bad aiStep2Group: ", e);
         }
         return null;
     }

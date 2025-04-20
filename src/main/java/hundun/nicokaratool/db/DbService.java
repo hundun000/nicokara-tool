@@ -237,11 +237,11 @@ public class DbService {
                                     .filter(it -> !it.equals(wordNoteDTO.getText()))
                                     .map(it -> "(" + it + ")")
                                     .orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getExplain()).orElse(""),
+                            Optional.ofNullable(wordNoteDTO.getTranslation()).orElse(""),
                             Optional.ofNullable(wordNoteDTO.getOrigin()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()).stream().collect(Collectors.joining(", ")),
-                            Optional.ofNullable(wordNoteDTO.getLevel()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getExtensionExplain()).orElse("")
+                            //Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()).stream().collect(Collectors.joining(", ")),
+                            //Optional.ofNullable(wordNoteDTO.getLevel()).orElse(""),
+                            Optional.ofNullable(wordNoteDTO.getContextualFunction()).orElse("")
                     );
                 });
             });
