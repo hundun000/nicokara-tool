@@ -12,7 +12,7 @@ public class DbServiceTest {
 
     @Test
     public void renderSongJson() throws Exception {
-        dbService.renderSongJson("example-japanese-short.db");
+        dbService.renderSongJson(DbService.handleFileName("example-japanese-short.db"));
     }
 
     @Test

@@ -211,4 +211,22 @@ public class JapaneseCharacterTool {
     private static String lookupRomaji(char c) {
         return romaji[c - 0x3041];
     }
+
+    public static boolean isAllKanji(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (!JapaneseCharacterTool.isKanji(text.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean hasAnyKanji(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (JapaneseCharacterTool.isKanji(text.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

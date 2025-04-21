@@ -3,6 +3,7 @@ package hundun.nicokaratool;
 import hundun.nicokaratool.db.DbService;
 import hundun.nicokaratool.japanese.JapaneseService;
 import hundun.nicokaratool.japanese.JapaneseService.ServiceContext;
+import lombok.extern.slf4j.Slf4j;
 
 
 import java.io.BufferedReader;
@@ -13,6 +14,7 @@ import java.util.List;
 
 import static hundun.nicokaratool.japanese.JapaneseService.objectMapper;
 
+@Slf4j
 public class MainRunner {
     public static final String CACHE_FOLDER = "data/caches/";
     public static final String PRIVATE_IO_FOLDER = "private-io/";
@@ -49,14 +51,58 @@ public class MainRunner {
                 }
                 nicokaraService.workStep2(serviceResult);
             } else if (handler.equals(HANDLER_DB)) {
-                String dbOperation = parts.get(1);
-                if (dbOperation.equals("loadFile")) {
-                    String fileName = parts.get(2);
-                    dbService.loadSongJson(fileName);
+                String dbOperation = parts.stream()
+                        .filter(it -> it.startsWith("operation="))
+                        .map(it -> it.substring("operation=".length()))
+                        .findFirst()
+                        .orElse("");
+                String fileName;
+                boolean autoFindFile = parts.stream()
+                        .filter(it -> it.equals("autoFindFile"))
+                        .findAny()
+                        .isPresent();
+                if (autoFindFile) {
+                    fileName = DbService.autoFindFile();
+                    log.info("autoFindFile result = {}", fileName);
+                } else {
+                    fileName = parts.stream()
+                            .filter(it -> it.startsWith("file="))
+                            .map(it -> it.substring("file=".length()))
+                            .findFirst()
+                            .orElse(null);
+                }
+                if (fileName == null) {
+                    throw new Exception("args fileName null");
+                }
+                if (dbOperation.startsWith("runAi")) {
+                    String[] aiArgs = DbService.handleFileName(fileName);
+                    boolean step1 = false;
+                    boolean step2 = false;
+                    boolean stepMd = false;
+                    if (dbOperation.equals("runAi")) {
+                        step1 = true;
+                        step2 = true;
+                        stepMd = true;
+                    } else if (dbOperation.equals("runAiStep1")) {
+                        step1 = true;
+                    } else if (dbOperation.equals("runAiStep2")) {
+                        step2 = true;
+                    } else if (dbOperation.equals("runAiStepMd")) {
+                        stepMd = true;
+                    }
+                    if (step1) {
+                        dbService.runAiStep1(aiArgs);
+                    }
+                    if (step2) {
+                        dbService.runAiStep2(aiArgs);
+                    }
+                    if (stepMd) {
+                        dbService.renderSongJson(aiArgs);
+                    }
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("bad command handle: ", e);
         }
 
         System.out.println("done.");

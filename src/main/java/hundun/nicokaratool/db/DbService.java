@@ -12,6 +12,7 @@ import hundun.nicokaratool.db.po.SongPO.LyricLinePO;
 import hundun.nicokaratool.db.po.WordNotePO;
 import hundun.nicokaratool.db.repository.SongRepository;
 import hundun.nicokaratool.db.repository.WordNoteRepository;
+import hundun.nicokaratool.japanese.JapaneseCharacterTool;
 import hundun.nicokaratool.util.JsonUtils;
 import hundun.nicokaratool.util.Utils;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,45 @@ public class DbService {
     public DbService() {
 
     }
+
+    public static String autoFindFile() {
+        return autoFindFile(".lrc", ".md").stream().findFirst().orElse(null);
+    }
+
+    /**
+     * 在候选文件夹中寻找首个：
+     * 1. 文件名以findExtension结尾（拓展名）
+     * 2. 且其余部分同名的pairExtension结尾（拓展名）文件不存在
+     */
+    private static List<String> autoFindFile(String findExtension, String pairExtension) {
+        File folder;
+        folder = new File(MainRunner.PRIVATE_IO_FOLDER);
+        String[] children = null;
+        if (folder.exists()) {
+            children = folder.list();
+        } else {
+            folder = new File(MainRunner.RUNTIME_IO_FOLDER);
+            if (folder.exists()) {
+                children = folder.list();
+            }
+        }
+        if (children != null) {
+            List<String> childrenList = Arrays.asList(children);
+            List<String> finds = childrenList.stream()
+                    .filter(it -> it.endsWith(findExtension))
+                    .map(it -> it.substring(0, it.length() - findExtension.length()))
+                    .collect(Collectors.toList());
+            List<String> pairs = childrenList.stream()
+                    .filter(it -> it.endsWith(pairExtension))
+                    .map(it -> it.substring(0, it.length() - pairExtension.length()))
+                    .collect(Collectors.toList());
+            finds.removeAll(pairs);
+            return finds;
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
     public void loadSongJson(String fileName) throws Exception {
         SongDTO songDTO = JsonUtils.objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
         SongPO songPO = SongPO.builder()
@@ -135,15 +175,15 @@ public class DbService {
         }
         return new String[]{fileName, title, artist};
     }
-    private static final String[] PREFIXES_TO_REMOVE = {"作词 :", "作曲 :", "编曲 :"};
+    private static final String[] PREFIXES_TO_REMOVE = {"作词", "作曲", "编曲", "編曲"};
     public void runAiStep1(String[] args) throws Exception {
-        String filaName = args[0];
+        String fileName = args[0];
         String title = args[1];
         String artist = args[2];
 
         var actualFiles = getActualFile(
-                List.of(filaName + ".txt", filaName + ".lrc"),
-                List.of(filaName + ".step1.json")
+                List.of(fileName + ".txt", fileName + ".lrc"),
+                List.of(fileName + ".step1.json")
         );
         File actualInput = actualFiles.get(0);
         File actualOutput = actualFiles.get(1);
@@ -278,9 +318,16 @@ public class DbService {
         private List<AiStep1ResultNode> nodes;
     }
 
-    public void renderSongJson(String fileName) throws Exception {
+    public void renderSongJson(String[] args) throws Exception {
+        String fileName = args[0];
+        String title = args[1];
 
-        File actualInput = getActualFile(fileName + ".json");
+        var actualFiles = getActualFile(
+                List.of(fileName + ".json", fileName + ".step2.json"),
+                List.of(fileName + ".md")
+        );
+        File actualInput = actualFiles.get(0);
+        File actualOutput = actualFiles.get(1);
 
         SongDTO songDTO = JsonUtils.objectMapper.readValue(actualInput, SongDTO.class);
         StringBuilder result = new StringBuilder();
@@ -303,6 +350,7 @@ public class DbService {
                             Optional.ofNullable(wordNoteDTO.getText()).orElse("")
                                     + Optional.ofNullable(wordNoteDTO.getHurikana())
                                     .filter(it -> !it.equals(wordNoteDTO.getText()))
+                                    .filter(it -> JapaneseCharacterTool.hasAnyKanji(wordNoteDTO.getText()))
                                     .map(it -> "(" + it + ")")
                                     .orElse(""),
                             Optional.ofNullable(wordNoteDTO.getTranslation()).orElse(""),
@@ -316,7 +364,7 @@ public class DbService {
             tableBuilder.addRow();
         });
         result.append(tableBuilder.build());
-        FileWriter myWriter = new FileWriter(actualInput.getParent() + File.separator + fileName + ".md");
+        FileWriter myWriter = new FileWriter(actualOutput);
         myWriter.write(result.toString());
         myWriter.close();
     }
