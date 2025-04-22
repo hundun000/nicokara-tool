@@ -1,6 +1,5 @@
 package hundun.nicokaratool;
 
-import hundun.nicokaratool.japanese.KuromojiTool;
 import io.github.humbleui.skija.*;
 import org.junit.Test;
 

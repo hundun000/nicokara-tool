@@ -1,9 +1,9 @@
 package hundun.nicokaratool;
 
-import hundun.nicokaratool.base.SecretConfig;
-import hundun.nicokaratool.japanese.TagTokenizer.Timestamp;
-import hundun.nicokaratool.layout.VideoRender;
-import hundun.nicokaratool.layout.VideoRender.KeyFrame;
+import hundun.nicokaratool.core.base.SecretConfig;
+import hundun.nicokaratool.core.japanese.TagTokenizer.Timestamp;
+import hundun.nicokaratool.core.layout.VideoRender;
+import hundun.nicokaratool.core.layout.VideoRender.KeyFrame;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
 import net.bramp.ffmpeg.FFmpegUtils;

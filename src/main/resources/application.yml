@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: my-app
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/nicokaratool-db
+      # 设置不在启动时依赖 MongoDB 的连接
+      continue-on-error: true
+server:
+  port: 8080
