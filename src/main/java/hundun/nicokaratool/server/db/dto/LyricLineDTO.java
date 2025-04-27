@@ -13,5 +13,5 @@ import java.util.List;
 @NoArgsConstructor
 public class LyricLineDTO {
     private String lyric;
-    private List<WordNoteDTO> wordNotes;
+    private List<SongWordDTO> wordNotes;
 }

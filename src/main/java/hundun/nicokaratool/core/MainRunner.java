@@ -1,6 +1,6 @@
 package hundun.nicokaratool.core;
 
-import hundun.nicokaratool.server.db.DbService;
+import hundun.nicokaratool.server.db.SongService;
 import hundun.nicokaratool.core.japanese.JapaneseService;
 import hundun.nicokaratool.core.japanese.JapaneseService.ServiceContext;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ public class MainRunner {
     static final String HANDLER_NICOKARA = "nicokara";
     static final String HANDLER_DB = "db";
     static JapaneseService nicokaraService = new JapaneseService();
-    static DbService dbService = new DbService();
+    static SongService songService = new SongService();
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -62,7 +62,7 @@ public class MainRunner {
                         .findAny()
                         .isPresent();
                 if (autoFindFile) {
-                    fileName = DbService.autoFindFile();
+                    fileName = SongService.autoFindFile();
                     log.info("autoFindFile result = {}", fileName);
                 } else {
                     fileName = parts.stream()
@@ -75,7 +75,7 @@ public class MainRunner {
                     throw new Exception("args fileName null");
                 }
                 if (dbOperation.startsWith("runAi")) {
-                    String[] aiArgs = DbService.handleFileName(fileName);
+                    String[] aiArgs = SongService.handleFileName(fileName);
                     boolean step1 = false;
                     boolean step2 = false;
                     boolean stepMd = false;
@@ -91,13 +91,13 @@ public class MainRunner {
                         stepMd = true;
                     }
                     if (step1) {
-                        dbService.runAiStep1(aiArgs);
+                        songService.runAiStep1(aiArgs);
                     }
                     if (step2) {
-                        dbService.runAiStep2(aiArgs);
+                        songService.runAiStep2(aiArgs);
                     }
                     if (stepMd) {
-                        dbService.renderSongJson(aiArgs);
+                        songService.renderSongJson(aiArgs);
                     }
                 }
             }

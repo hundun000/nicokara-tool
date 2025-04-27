@@ -5,13 +5,13 @@ import hundun.nicokaratool.server.db.ai.AiServiceLocator;
 import hundun.nicokaratool.server.db.dto.LyricGroupDTO;
 import hundun.nicokaratool.server.db.dto.LyricLineDTO;
 import hundun.nicokaratool.server.db.dto.SongDTO;
-import hundun.nicokaratool.server.db.dto.WordNoteDTO;
+import hundun.nicokaratool.server.db.dto.SongWordDTO;
 import hundun.nicokaratool.server.db.po.SongPO;
 import hundun.nicokaratool.server.db.po.SongPO.LyricGroupPO;
 import hundun.nicokaratool.server.db.po.SongPO.LyricLinePO;
-import hundun.nicokaratool.server.db.po.WordNotePO;
+import hundun.nicokaratool.server.db.po.SongWordPO;
 import hundun.nicokaratool.server.db.repository.SongRepository;
-import hundun.nicokaratool.server.db.repository.WordNoteRepository;
+import hundun.nicokaratool.server.db.repository.SongWordRepository;
 import hundun.nicokaratool.core.japanese.JapaneseCharacterTool;
 import hundun.nicokaratool.core.util.JsonUtils;
 import hundun.nicokaratool.core.util.Utils;
@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.steppschuh.markdowngenerator.table.Table;
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
 import net.steppschuh.markdowngenerator.text.emphasis.ItalicText;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,14 +34,14 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class DbService {
+public class SongService {
 
     AiServiceLocator aiServiceLocator = new AiServiceLocator();
     @Autowired
     SongRepository songRepository;
     @Autowired
-    WordNoteRepository wordNoteRepository;
-    public DbService() {
+    SongWordRepository songWordRepository;
+    public SongService() {
 
     }
 
@@ -53,7 +54,7 @@ public class DbService {
      * 1. 文件名以findExtension结尾（拓展名）
      * 2. 且其余部分同名的pairExtension结尾（拓展名）文件不存在
      */
-    private static List<String> autoFindFile(String findExtension, String pairExtension) {
+    private static List<String> autoFindFile(String findExtension, @Nullable String pairExtension) {
         File folder;
         folder = new File(MainRunner.PRIVATE_IO_FOLDER);
         String[] children = null;
@@ -72,8 +73,8 @@ public class DbService {
                     .map(it -> it.substring(0, it.length() - findExtension.length()))
                     .collect(Collectors.toList());
             List<String> pairs = childrenList.stream()
-                    .filter(it -> it.endsWith(pairExtension))
-                    .map(it -> it.substring(0, it.length() - pairExtension.length()))
+                    .filter(it -> pairExtension == null || it.endsWith(pairExtension))
+                    .map(it -> pairExtension == null ? it : it.substring(0, it.length() - pairExtension.length()))
                     .collect(Collectors.toList());
             finds.removeAll(pairs);
             return finds;
@@ -82,18 +83,50 @@ public class DbService {
         }
     }
 
-    public void loadSongJson(String fileName) throws Exception {
-        SongDTO songDTO = JsonUtils.objectMapper.readValue(new File(MainRunner.RUNTIME_IO_FOLDER + fileName + ".json"), SongDTO.class);
+    public void autoFindSongJsonSaveToDB() throws Exception {
+        var fileNames = autoFindFile(".step2.json", null);
+        List<String> skipFileNames = new ArrayList<>();
+        List<String> successArgs = new ArrayList<>();
+        for (String fileName : fileNames) {
+            String[] args = SongService.handleFileName(fileName);
+            try {
+                saveSongJsonToDB(args);
+                successArgs.add(args[0]);
+            } catch (SkipSaveException e) {
+                skipFileNames.add(fileName);
+            } catch (Exception e) {
+                log.warn("bad saveSongJsonToDB: ", e);
+            }
+        }
+        log.info("skipFileNames size: {}", skipFileNames.size());
+        log.info("successArgs: {}", successArgs);
+    }
+
+    public static class SkipSaveException extends Exception {
+        SkipSaveException(String msg) {
+            super(msg);
+        }
+    }
+
+    public void saveSongJsonToDB(String[] args) throws Exception {
+        String filaName = args[0];
+
+        var actualFiles = getActualFile(
+                List.of(filaName + ".step2.json"),
+                new ArrayList<>()
+        );
+        File file = actualFiles.get(0);
+        SongDTO songDTO = JsonUtils.objectMapper.readValue(file, SongDTO.class);
         SongPO songPO = SongPO.builder()
                 .title(songDTO.getTitle())
                 .artist(songDTO.getArtist())
                 .build();
         if (songRepository.existsByTitle(songDTO.getTitle())) {
-            throw new Exception("existTitle: " + songDTO.getTitle());
+            throw new SkipSaveException("existTitle: " + songDTO.getTitle());
         }
         songPO = songRepository.save(songPO);
         List<LyricGroupPO> groupPOS = new ArrayList<>();
-        List<WordNotePO> notePOS = new ArrayList<>();
+        List<SongWordPO> notePOS = new ArrayList<>();
         for (int i = 0; i < songDTO.getGroups().size(); i++) {
             LyricGroupDTO groupDTO = songDTO.getGroups().get(i);
             List<LyricLinePO> linePOS = new ArrayList<>();
@@ -101,8 +134,8 @@ public class DbService {
                 LyricLineDTO lineDTO = groupDTO.getLineNotes().get(j);
                 for (int k = 0; k < lineDTO.getWordNotes().size(); k++) {
                     var wordNoteDTO = lineDTO.getWordNotes().get(k);
-                    var wordNotePO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(wordNoteDTO), WordNotePO.class);
-                    wordNotePO.setId(WordNotePO.toId(songPO.getId(), i, j, k));
+                    var wordNotePO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(wordNoteDTO), SongWordPO.class);
+                    wordNotePO.setId(SongWordPO.toId(songPO.getId(), i, j, k));
                     wordNotePO.setSongId(songPO.getId());
                     wordNotePO.setGroupIndex(i);
                     wordNotePO.setLineIndex(j);
@@ -125,7 +158,7 @@ public class DbService {
         }
         songPO.setGroups(groupPOS);
         songRepository.save(songPO);
-        wordNoteRepository.saveAll(notePOS);
+        songWordRepository.saveAll(notePOS);
         log.info("save songPO: {}, notePOS size = {}", songPO.getId(), notePOS.size());
     }
 
@@ -133,7 +166,7 @@ public class DbService {
             "原文/中文", "解释", "原形", "更多解释"
     };
 
-    private File getActualFile(String fileName) {
+    public File getActualFile(String fileName) {
         return getActualFile(List.of(fileName), List.of()).get(0);
     }
 
@@ -349,19 +382,19 @@ public class DbService {
                 tableBuilder.addRow(
                         new BoldText(Optional.ofNullable(lyricLineDTO.getLyric()).orElse(""))
                 );
-                lyricLineDTO.getWordNotes().forEach(wordNoteDTO -> {
+                lyricLineDTO.getWordNotes().forEach(songWordDTO -> {
                     tableBuilder.addRow(
-                            Optional.ofNullable(wordNoteDTO.getText()).orElse("")
-                                    + Optional.ofNullable(wordNoteDTO.getHurikana())
-                                    .filter(it -> !it.equals(wordNoteDTO.getText()))
-                                    .filter(it -> JapaneseCharacterTool.hasAnyKanji(wordNoteDTO.getText()))
+                            Optional.ofNullable(songWordDTO.getText()).orElse("")
+                                    + Optional.ofNullable(songWordDTO.getHurikana())
+                                    .filter(it -> !it.equals(songWordDTO.getText()))
+                                    .filter(it -> JapaneseCharacterTool.hasAnyKanji(songWordDTO.getText()))
                                     .map(it -> "(" + it + ")")
                                     .orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getTranslation()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getOrigin()).orElse(""),
+                            Optional.ofNullable(songWordDTO.getTranslation()).orElse(""),
+                            Optional.ofNullable(songWordDTO.getOrigin()).orElse(""),
                             //Optional.ofNullable(wordNoteDTO.getCategory()).orElse(List.of()).stream().collect(Collectors.joining(", ")),
                             //Optional.ofNullable(wordNoteDTO.getLevel()).orElse(""),
-                            Optional.ofNullable(wordNoteDTO.getExplain()).orElse("")
+                            Optional.ofNullable(songWordDTO.getExplain()).orElse("")
                     );
                 });
             });
@@ -382,15 +415,15 @@ public class DbService {
             List<LyricLineDTO> lineDTOS = new ArrayList<>();
             for (int lineIndex = 0; lineIndex < groupPO.getLines().size(); lineIndex++) {
                 LyricLinePO linePO = groupPO.getLines().get(lineIndex);
-                List<WordNoteDTO> wordNotes = new ArrayList<>();
+                List<SongWordDTO> wordNotes = new ArrayList<>();
                 for (int wordIndex = 0; wordIndex < linePO.getWordSize(); wordIndex++) {
-                    String id = WordNotePO.toId(songPO.getId(), groupIndex, lineIndex, wordIndex);
-                    WordNotePO wordNotePO = wordNoteRepository.findById(id).orElse(null);
-                    if (wordNotePO == null) {
+                    String id = SongWordPO.toId(songPO.getId(), groupIndex, lineIndex, wordIndex);
+                    SongWordPO songWordPO = songWordRepository.findById(id).orElse(null);
+                    if (songWordPO == null) {
                         throw new Exception("NotFound WordNotePO id = " + id);
                     }
-                    WordNoteDTO wordNoteDTO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(wordNotePO), WordNoteDTO.class);
-                    wordNotes.add(wordNoteDTO);
+                    SongWordDTO songWordDTO = JsonUtils.objectMapper.readValue(JsonUtils.objectMapper.writeValueAsString(songWordPO), SongWordDTO.class);
+                    wordNotes.add(songWordDTO);
                 }
                 LyricLineDTO lineDTO = LyricLineDTO.builder()
                         .lyric(linePO.getLyric())

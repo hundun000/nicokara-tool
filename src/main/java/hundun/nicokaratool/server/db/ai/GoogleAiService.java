@@ -1,6 +1,6 @@
 package hundun.nicokaratool.server.db.ai;
 
-import hundun.nicokaratool.server.db.DbService.AiStep1ResultNode;
+import hundun.nicokaratool.server.db.SongService.AiStep1ResultNode;
 import hundun.nicokaratool.server.db.dto.LyricLineDTO;
 import hundun.nicokaratool.core.remote.GoogleAiFeignClientImpl;
 import hundun.nicokaratool.core.remote.IGoogleAiFeignClient.GenerateContentResponse;

@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document("wordNotes")
-public class WordNotePO {
+public class SongWordPO {
     /**
      * 来自toId
      */
@@ -24,18 +24,20 @@ public class WordNotePO {
     private int groupIndex;
     private int lineIndex;
     int wordIndex;
-    public static String toId(String songId, int groupIndex, int lineIndex, int wordIndex) {
-        return songId + "_" + groupIndex + "_" + lineIndex + "_" + wordIndex;
-    }
 
     /*
     ------ 以下字段通过反序列化赋值，应和 WordNoteDTO 一致
      */
+    @Indexed
     private String text;
+    @Indexed
     private String hurikana;
+    @Indexed
     private String origin;
     private String translation;
     private String contextualFunction;
 
-
+    public static String toId(String songId, int groupIndex, int lineIndex, int wordIndex) {
+        return songId + "_" + groupIndex + "_" + lineIndex + "_" + wordIndex;
+    }
 }

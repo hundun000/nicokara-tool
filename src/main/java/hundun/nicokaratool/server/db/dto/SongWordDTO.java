@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class WordNoteDTO {
+public class SongWordDTO {
     private String text; //文本类型，学习点对应歌词文本
     private String hurikana; //文本类型，汉字的振假名，若无可省略。
     private String origin; //文本类型，动词原形或形容原形。若已是原形可省略。
