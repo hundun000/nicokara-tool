@@ -26,7 +26,7 @@ public class GoogleAiService  extends AiService{
     }
     @Override
     public @Nullable List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplate) {
-        String ask = step2AskTemplate + "\n" + askLines.stream().collect(Collectors.joining("\n\n"));
+        String ask = step2AskTemplate + "\n" + askLines.stream().collect(Collectors.joining("\n"));
         try {
             GenerateContentResponse chatResult = feignClient.singleAsk(ask);
             String content = chatResult.getCandidates()[0].getContent().getParts()[0].getText();

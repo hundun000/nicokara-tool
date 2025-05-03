@@ -2,7 +2,7 @@ package hundun.nicokaratool.core.layout;
 
 import hundun.nicokaratool.core.base.SecretConfig;
 import hundun.nicokaratool.core.japanese.TagTokenizer.Timestamp;
-import hundun.nicokaratool.core.util.Utils;
+import hundun.nicokaratool.core.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -100,7 +100,7 @@ public class VideoRender {
                     //return "file " + relative + "\ninpoint  " + it.getInpoint().toFfmpegTime() + "\noutpoint  " + it.getOutpoint().toFfmpegTime();
                 })
                 .collect(Collectors.joining("\n"));
-        Utils.writeAllLines(tempFile, text);
+        FileUtils.writeAllLines(tempFile, text);
     }
     public static String concat(String prepareFolder, List<KeyFrame> frames) {
         String tempFile = prepareFolder + "ffmpeg-temp.txt";

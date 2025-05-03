@@ -14,7 +14,7 @@ import hundun.nicokaratool.server.db.repository.SongRepository;
 import hundun.nicokaratool.server.db.repository.SongWordRepository;
 import hundun.nicokaratool.core.japanese.JapaneseCharacterTool;
 import hundun.nicokaratool.core.util.JsonUtils;
-import hundun.nicokaratool.core.util.Utils;
+import hundun.nicokaratool.core.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -221,12 +221,12 @@ public class SongService {
 
         var actualFiles = getActualFile(
                 List.of(fileName + ".txt", fileName + ".lrc"),
-                List.of(fileName + ".step1.json")
+                List.of(fileName + ".step1.json", "Step1AskTemplate.txt")
         );
         File actualInput = actualFiles.get(0);
         File actualOutput = actualFiles.get(1);
 
-        List<String> lyricLines = Utils.readAllLines(actualInput).stream()
+        List<String> lyricLines = FileUtils.readAllLines(actualInput).stream()
                 .map(line -> line.replaceAll("\\[\\d{2}:\\d{2}[.:]\\d{2,3}\\]", ""))
                 .filter(line -> Arrays.stream(PREFIXES_TO_REMOVE).noneMatch(line::startsWith))
                 .collect(Collectors.toList());
@@ -240,8 +240,8 @@ public class SongService {
                 aiServiceLocator.getStep1TaskSplitMaxSize()
         );
 
-        File actualStep1AskTemplateFile = getActualFile( "Step1AskTemplate.txt");
-        String step1AskTemplate = Utils.readAllLines(actualStep1AskTemplateFile).stream().collect(Collectors.joining("\n"));
+        File actualStep1AskTemplateFile = actualFiles.get(2);
+        String step1AskTemplate = FileUtils.readAllLines(actualStep1AskTemplateFile).stream().collect(Collectors.joining("\n"));
         AiStep1Result result = AiStep1Result.builder()
                 .title(title)
                 .artist(artist)
@@ -266,12 +266,12 @@ public class SongService {
 
         var actualFiles = getActualFile(
                 List.of(filaName + ".step1.json"),
-                List.of(filaName + ".step2.json")
+                List.of(filaName + ".step2.json", "Step2AskTemplate.txt")
         );
         File step1ResultFile = actualFiles.get(0);
         File resultFile = actualFiles.get(1);
-        File step2AskTemplateFile = getActualFile( "Step2AskTemplate.txt");
-        String step2AskTemplate = Utils.readAllLines(step2AskTemplateFile).stream().collect(Collectors.joining("\n"));
+        File step2AskTemplateFile = actualFiles.get(2);
+        String step2AskTemplate = FileUtils.readAllLines(step2AskTemplateFile).stream().collect(Collectors.joining("\n"));
 
         SongDTO songDTO = aiStep2PrepareResult(step1ResultFile, resultFile);
         // 只选择待处理的LyricGroupDTO

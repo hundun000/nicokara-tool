@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 @Slf4j
-public class Utils {
+public class FileUtils {
 
     public static List<String> readAllLines(String path) {
         try {

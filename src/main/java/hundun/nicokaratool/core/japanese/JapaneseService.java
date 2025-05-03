@@ -31,7 +31,7 @@ import hundun.nicokaratool.core.layout.text.NicokaraLyricsRender;
 import hundun.nicokaratool.core.layout.table.Table;
 import hundun.nicokaratool.core.layout.table.TableBuilder;
 import hundun.nicokaratool.core.remote.GoogleServiceImpl;
-import hundun.nicokaratool.core.util.Utils;
+import hundun.nicokaratool.core.util.FileUtils;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -582,7 +582,7 @@ public class JapaneseService {
 
         boolean saveRootHint = false;
 
-        List<String> lines = Utils.readAllLines(MainRunner.RUNTIME_IO_FOLDER + name + ".txt");
+        List<String> lines = FileUtils.readAllLines(MainRunner.RUNTIME_IO_FOLDER + name + ".txt");
         RootHint rootHint;
         File rootHintFile = new File(MainRunner.RUNTIME_IO_FOLDER + name + ".rootHint.json");
         if (rootHintFile.exists()) {
@@ -665,7 +665,7 @@ public class JapaneseService {
         if (argPackage.outputLogFile) {
             try {
                 String logText = fileObjectMapper.writeValueAsString(serviceContext.getParsedLines());
-                Utils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".log.json", logText);
+                FileUtils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".log.json", logText);
             } catch (JsonProcessingException e) {
                 log.error("bad outputLogFile", e);
             }
@@ -693,7 +693,7 @@ public class JapaneseService {
         }
         if (argPackage.outputNicokara) {
             String kraFileText = serviceContext.getLyricsText() + "\n" + serviceContext.getRuby();
-            Utils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".kra", kraFileText);
+            FileUtils.writeAllLines(MainRunner.RUNTIME_IO_FOLDER + serviceContext.getTitle() + ".kra", kraFileText);
         }
         if (argPackage.outputVideo) {
             int space = 10;

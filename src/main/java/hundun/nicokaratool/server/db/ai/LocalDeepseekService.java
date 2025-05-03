@@ -24,7 +24,7 @@ public class LocalDeepseekService extends AiService {
 
     @Override
     public @Nullable List<LyricLineDTO> aiStep2Group(List<String> askLines, String step2AskTemplate) {
-        String ask = step2AskTemplate + "\n" + askLines.stream().collect(Collectors.joining("\n\n"));
+        String ask = step2AskTemplate + "\n" + askLines.stream().collect(Collectors.joining("\n"));
         try {
             OllamaChatResult chatResult = OllamaService.singleAsk(ask);
             String content = chatResult.getResponseModel().getMessage().getContent();
