@@ -55,8 +55,9 @@
 ### 用法3：生成歌词分析Markdown文件
 
 > DbServiceTest.renderSongJson()
+> 或MainRunner.mai() `db --operation=runAi --autoFindFile`
 
-询问大模型AI，prompt见`Step1AskTemplate.rxt`和`Step2AskTemplate.rxt`，prompt中要求ai联系上下文解读，能一定程度缓解上述用法2的问题。
+询问大模型AI，prompt见`data/Step1AskTemplate.txt`和`data/Step2AskTemplate.txt`，prompt中要求ai联系上下文解读，能一定程度缓解上述用法2的问题。
 
 得到歌词分析json，存为文件放入指定位置。
 

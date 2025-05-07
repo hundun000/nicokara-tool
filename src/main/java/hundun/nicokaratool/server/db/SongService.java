@@ -41,6 +41,12 @@ public class SongService {
     SongRepository songRepository;
     @Autowired
     SongWordRepository songWordRepository;
+
+    List<String> findActualFileFromList = List.of(
+            MainRunner.PRIVATE_IO_FOLDER,
+            MainRunner.RUNTIME_IO_FOLDER,
+            MainRunner.DATA_FOLDER
+    );
     public SongService() {
 
     }
@@ -175,19 +181,19 @@ public class SongService {
      * 确定文件夹后，otherFileNames均采用该文件夹；
      */
     private List<File> getActualFile(List<String> mainFileNameOptions, List<String> otherFileNames) {
-        String actualFolder = MainRunner.PRIVATE_IO_FOLDER;
-        File actualFile = mainFileNameOptions.stream()
-                .map(it -> new File(MainRunner.PRIVATE_IO_FOLDER + it))
-                .filter(it -> it.exists())
-                .findFirst()
-                .orElse(null);
-        if (actualFile == null) {
-            actualFolder = MainRunner.RUNTIME_IO_FOLDER;
+        String actualFolder = null;
+        File actualFile = null;
+        for (String s : findActualFileFromList) {
+            actualFolder = s;
+            String finalActualFolder1 = actualFolder;
             actualFile = mainFileNameOptions.stream()
-                    .map(it -> new File(MainRunner.RUNTIME_IO_FOLDER + it))
+                    .map(it -> new File(finalActualFolder1 + it))
                     .filter(it -> it.exists())
                     .findFirst()
                     .orElse(null);
+            if (actualFile != null) {
+                break;
+            }
         }
         if (actualFile == null) {
             throw new NoSuchElementException("候选文件夹中均找不到文件：" + String.join(", ", mainFileNameOptions));
